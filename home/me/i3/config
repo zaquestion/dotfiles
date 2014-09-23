@@ -12,7 +12,7 @@ set $mod Mod4
 
 #setup screen
 exec xrandr --newmode "2160x1440" 263.19 2160 2320 2552 2944 1440 1441 1444 1490 -HSync +Vsync
-exec xrandr --addmode "2160x1440"
+exec xrandr --addmode Virtual1 "2160x1440"
 exec xrandr --output Virtual1 --mode "2160x1440"
 
 # font for window titles. ISO 10646 = Unicode
