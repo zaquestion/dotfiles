@@ -10,9 +10,10 @@
 # Please see http://i3wm.org/docs/userguide.html for a complete reference!
 set $mod Mod4
 
-#Lock
-bindsym Control+Mod1+l exec i3lock -i ~/Pictures/back4.png -t
-
+#setup screen
+exec xrandr --newmode "2160x1440" 263.19 2160 2320 2552 2944 1440 1441 1444 1490 -HSync +Vsync
+exec xrandr --addmode "2160x1440"
+exec xrandr --output Virtual1 --mode "2160x1440"
 
 # font for window titles. ISO 10646 = Unicode
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
