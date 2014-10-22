@@ -18,7 +18,10 @@ syntax on
 set relativenumber
 set number
 
-"Keybinding
+"shows matching ({[]})
+set showmatch
+
+"Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
 map <C-k> <C-w>k
