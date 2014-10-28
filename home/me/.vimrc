@@ -21,6 +21,10 @@ set number
 "shows matching ({[]})
 set showmatch
 
+"allows case insensitive searching with smart exceptions
+set ignorematch
+set smartcase
+
 "Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
