@@ -1,0 +1,43 @@
+127.0.0.1	localhost
+127.0.1.1	zaqlinux
+# facebook is blocked EOF
+0.0.0.0 twitter.com
+0.0.0.0 ello.com
+0.0.0.0 reddit.com
+0.0.0.0 4chan.org
+0.0.0.0 gmail.com
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+# Block Facebook IPv4
+0.0.0.0  www.facebook.com
+0.0.0.0  facebook.com
+0.0.0.0  login.facebook.com
+0.0.0.0  www.login.facebook.com
+0.0.0.0  fbcdn.net
+0.0.0.0  www.fbcdn.net
+0.0.0.0  fbcdn.com
+0.0.0.0  www.fbcdn.com
+0.0.0.0  static.ak.fbcdn.net
+0.0.0.0  static.ak.connect.facebook.com
+0.0.0.0  connect.facebook.net
+0.0.0.0  www.connect.facebook.net
+0.0.0.0  apps.facebook.com
+
+# Block Facebook IPv6
+::0 facebook.com
+::0 www.facebook.com
+::0 login.facebook.com
+::0 www.login.facebook.com
+::0 fbcdn.net
+::0 www.fbcdn.net
+::0 fbcdn.com
+::0 www.fbcdn.com
+::0 static.ak.fbcdn.net
+::0 static.ak.connect.facebook.com
+::0 connect.facebook.net
+::0 www.connect.facebook.net
+::0 apps.facebook.com
