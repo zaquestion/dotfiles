@@ -6,10 +6,9 @@ set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
 Bundle 'rking/ag.vim'
-Bundle 'Shougo/neocomplete'
-Bundle 'Shougo/neosnippet'
-Bundle 'Shougo/neosnippet-snippets'
-
+"Bundle 'Shougo/neocomplete'
+"Bundle 'Shougo/neosnippet'
+"Bundle 'Shougo/neosnippet-snippets'
 Plugin 'nsf/gocode', {'rtp': 'vim/'}
 
 call vundle#end()
@@ -21,6 +20,9 @@ syntax on
 
 set relativenumber
 set number
+
+"remove awful omnicomplete scratch preview
+set completeopt-=preview
 
 "shows matching ({[]})
 set showmatch
