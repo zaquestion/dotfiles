@@ -5,12 +5,17 @@ filetype off                  " required
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
+Bundle 'rking/ag.vim'
 Bundle 'Shougo/neocomplete'
 Bundle 'Shougo/neosnippet'
 Bundle 'Shougo/neosnippet-snippets'
 
+Plugin 'nsf/gocode', {'rtp': 'vim/'}
+
 call vundle#end()
 filetype plugin indent on
+
+noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 syntax on
 
@@ -35,9 +40,13 @@ map <C-l> <C-w>l
 "map <C-K> <C-w>K
 "map <C-L> <C-w>L
 
+"ctags config
+au BufWritePost *.go silent! !ctags -R &
+
 "tagbar gotags config
 set rtp+=$projects/tagbar
 nmap <F8> :TagbarToggle<CR>
+
 
 let g:tagbar_type_go = { 
     \ 'ctagstype' : 'go',
