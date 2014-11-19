@@ -28,7 +28,7 @@ set completeopt-=preview
 set showmatch
 
 "allows case insensitive searching with smart exceptions
-set ignorematch
+set ignorecase
 set smartcase
 
 "Keybinding hotkeys for switching windows
@@ -43,7 +43,6 @@ map <C-l> <C-w>l
 "map <C-L> <C-w>L
 
 "ctags config
-au BufWritePost *.go silent! !ctags -R &
 
 "tagbar gotags config
 set rtp+=$projects/tagbar
