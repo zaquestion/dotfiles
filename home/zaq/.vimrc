@@ -5,15 +5,22 @@ filetype off                  " required
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
-Bundle 'rking/ag.vim'
-"Bundle 'Shougo/neocomplete'
-"Bundle 'Shougo/neosnippet'
-"Bundle 'Shougo/neosnippet-snippets'
+Plugin 'rking/ag.vim'
+Plugin 'Valloric/YouCompleteMe'
 Plugin 'nsf/gocode', {'rtp': 'vim/'}
 
 call vundle#end()
 filetype plugin indent on
 
+" Some Linux distributions set filetype in /etc/vimrc.
+" Clear filetype flags before changing runtimepath to force Vim to reload them.
+if exists("g:did_load_filetypes")
+	filetype off
+	filetype plugin indent off
+endif
+set rtp+=$GOROOT/misc/vim " replace $GOROOT with the output of: go env GOROOT
+filetype plugin indent on
+syntax on
 noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 syntax on
