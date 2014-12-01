@@ -18,7 +18,7 @@ if exists("g:did_load_filetypes")
 	filetype off
 	filetype plugin indent off
 endif
-set rtp+=$GOROOT/misc/vim " replace $GOROOT with the output of: go env GOROOT
+set rtp+=/usr/local/go/misc/vim " replace $GOROOT with the output of: go env GOROOT
 filetype plugin indent on
 syntax on
 noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
