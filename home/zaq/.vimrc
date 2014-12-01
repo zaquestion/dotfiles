@@ -7,7 +7,6 @@ call vundle#begin()
 
 Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
-Plugin 'nsf/gocode', {'rtp': 'vim/'}
 
 call vundle#end()
 filetype plugin indent on
