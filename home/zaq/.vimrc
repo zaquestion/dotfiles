@@ -18,6 +18,7 @@ if exists("g:did_load_filetypes")
 	filetype plugin indent off
 endif
 set rtp+=/usr/local/go/misc/vim " replace $GOROOT with the output of: go env GOROOT
+autocmd FileType go autocmd BufWritePre <buffer> Fmt
 filetype plugin indent on
 syntax on
 noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
