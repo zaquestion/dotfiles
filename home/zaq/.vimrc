@@ -5,6 +5,7 @@ filetype off                  " required
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
+Plugin 'fatih/vim-go'
 Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
 
@@ -18,12 +19,13 @@ if exists("g:did_load_filetypes")
 	filetype plugin indent off
 endif
 set rtp+=/usr/local/go/misc/vim " replace $GOROOT with the output of: go env GOROOT
-autocmd FileType go autocmd BufWritePre <buffer> Fmt
 filetype plugin indent on
 syntax on
 noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 syntax on
+
+autocmd BufWritePre * :%s/\s\+$//e
 
 set relativenumber
 set number
