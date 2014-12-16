@@ -25,6 +25,7 @@ noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 syntax on
 
+"remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
 
 set relativenumber
