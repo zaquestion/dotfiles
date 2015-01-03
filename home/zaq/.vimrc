@@ -53,3 +53,9 @@ map <C-l> <C-w>l
 "map <C-L> <C-w>L
 
 "ctags config
+function! UpdateTags()
+  	silent! !~/scripts/update-tags.sh %:p:h %:t &
+	redraw!
+endfunction
+autocmd BufWritePost * :call UpdateTags()
+set tags=$projects/tags
