@@ -10,7 +10,6 @@ Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
 
 call vundle#end()
-filetype plugin indent on
 
 " Some Linux distributions set filetype in /etc/vimrc.
 " Clear filetype flags before changing runtimepath to force Vim to reload them.
