@@ -5,6 +5,7 @@ filetype off                  " required
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
+Plugin 'marijnh/tern_for_vim'
 Plugin 'fatih/vim-go'
 Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
