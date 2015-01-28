@@ -16,7 +16,6 @@ xdg-user-dirs-update --set PUBLICSHARE ~/public
 xdg-user-dirs-update --set TEMPLATES ~/templates
 xdg-user-dirs-update --set VIDEOS ~/videos
 
-mkdir projects
 mkdir projects/go
 mkdir projects/go/src
 mkdir projects/go/pkg
