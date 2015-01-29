@@ -41,6 +41,11 @@ set showmatch
 set ignorecase
 set smartcase
 
+"do highlighting on search and macro do clear search
+set hlsearch
+nnoremap <C-c> :noh<CR><CR>
+nnoremap <esc> :noh<CR><CR>
+
 "Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
