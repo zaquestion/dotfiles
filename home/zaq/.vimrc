@@ -9,6 +9,7 @@ Plugin 'marijnh/tern_for_vim'
 Plugin 'fatih/vim-go'
 Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
+Plugin 'tmhedberg/SimpylFold'
 
 call vundle#end()
 
