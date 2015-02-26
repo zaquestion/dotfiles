@@ -28,6 +28,8 @@ syntax on
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
 
+set t_Co=256
+
 set relativenumber
 set number
 
