@@ -10,6 +10,8 @@ Plugin 'fatih/vim-go'
 Plugin 'rking/ag.vim'
 Plugin 'Valloric/YouCompleteMe'
 
+Plugin 'zaqthefreshman/vim-monokai'
+
 call vundle#end()
 
 " Some Linux distributions set filetype in /etc/vimrc.
@@ -27,8 +29,6 @@ syntax on
 
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
-
-set t_Co=256
 
 set relativenumber
 set number
