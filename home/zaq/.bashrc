@@ -7,7 +7,10 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 export zaq=$GOPATH/src/github.com/zaqthefreshman
 
+export PS1="\u@\h:\w\[\033[m\]\$(__git_ps1)\$ "
+
 source ~/.git-completion.bash
+source ~/.git-prompt.sh
 
 #color stuff
 if [ "$TERM" = "xterm" ] ; then
