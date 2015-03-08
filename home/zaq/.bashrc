@@ -72,3 +72,9 @@ if [ -z "$SCREEN_COLORS" ] ; then
             export TERM=rxvt
             ;;
         screen*)
+            echo "Unknown terminal $TERM. Falling back to 'screen'."
+            export TERM=screen
+            ;;
+    esac
+    SCREEN_COLORS=`tput colors`
+fi
