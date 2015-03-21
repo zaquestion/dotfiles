@@ -15,6 +15,7 @@ Plugin 'Valloric/YouCompleteMe'
 Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'zaqthefreshman/vim-monokai'
+Plugin 'terryma/vim-multiple-cursors'
 
 call vundle#end()
 
