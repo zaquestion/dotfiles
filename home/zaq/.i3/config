@@ -22,6 +22,9 @@ bindsym $mod+Return exec i3-sensible-terminal
 # kill focused window
 bindsym $mod+Shift+Q kill
 
+#restart networking
+bindsym $mod+Shift+N exec gksu service networking restart
+
 # start dmenu (a program launcher)
 bindsym $mod+d exec dmenu_run
 
