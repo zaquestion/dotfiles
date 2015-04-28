@@ -17,6 +17,8 @@ Plugin 'tmhedberg/SimpylFold'
 Plugin 'zaqthefreshman/vim-monokai'
 Plugin 'terryma/vim-multiple-cursors'
 
+Plugin 'tpope/vim-fugitive'
+
 call vundle#end()
 
 " Some Linux distributions set filetype in /etc/vimrc.
