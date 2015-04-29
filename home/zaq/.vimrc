@@ -18,6 +18,7 @@ Plugin 'zaqthefreshman/vim-monokai'
 Plugin 'terryma/vim-multiple-cursors'
 
 Plugin 'tpope/vim-fugitive'
+Plugin 'majutsushi/tagbar'
 
 call vundle#end()
 
@@ -74,3 +75,4 @@ function! UpdateTags()
 endfunction
 autocmd BufWritePost * :call UpdateTags()
 set tags=$projects/tags
+nmap <F8> :TagbarToggle<CR>
