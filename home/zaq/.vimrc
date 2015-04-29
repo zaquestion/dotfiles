@@ -8,17 +8,22 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'gmarik/Vundle.vim'
 
+Plugin 'Valloric/YouCompleteMe'
+Plugin 'sirver/ultisnips'
+Plugin 'honza/vim-snippets'
 
 Plugin 'marijnh/tern_for_vim'
 Plugin 'fatih/vim-go'
+
+Plugin 'majutsushi/tagbar'
 Plugin 'rking/ag.vim'
-Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'zaqthefreshman/vim-monokai'
+Plugin 'tmhedberg/SimpylFold'
+
 Plugin 'terryma/vim-multiple-cursors'
 
 Plugin 'tpope/vim-fugitive'
-Plugin 'majutsushi/tagbar'
 
 call vundle#end()
 
@@ -76,3 +81,8 @@ endfunction
 autocmd BufWritePost * :call UpdateTags()
 set tags=$projects/tags
 nmap <F8> :TagbarToggle<CR>
+
+" Trigger configuration. Do not use <tab> if you use https://github.com/Valloric/YouCompleteMe.
+let g:UltiSnipsExpandTrigger="<c-l>"
+let g:UltiSnipsJumpForwardTrigger="<c-b>"
+let g:UltiSnipsJumpBackwardTrigger="<c-z>"
