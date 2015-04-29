@@ -8,10 +8,10 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'gmarik/Vundle.vim'
 
+
 Plugin 'marijnh/tern_for_vim'
 Plugin 'fatih/vim-go'
 Plugin 'rking/ag.vim'
-Plugin 'Valloric/YouCompleteMe'
 Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'zaqthefreshman/vim-monokai'
