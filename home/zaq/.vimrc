@@ -84,5 +84,5 @@ nmap <F8> :TagbarToggle<CR>
 
 " Trigger configuration. Do not use <tab> if you use https://github.com/Valloric/YouCompleteMe.
 let g:UltiSnipsExpandTrigger="<c-l>"
-let g:UltiSnipsJumpForwardTrigger="<c-b>"
-let g:UltiSnipsJumpBackwardTrigger="<c-z>"
+let g:UltiSnipsJumpForwardTrigger="<c-m>"
+let g:UltiSnipsJumpBackwardTrigger="<c-b>"
