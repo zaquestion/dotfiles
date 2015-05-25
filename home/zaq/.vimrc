@@ -24,6 +24,7 @@ Plugin 'tmhedberg/SimpylFold'
 Plugin 'terryma/vim-multiple-cursors'
 
 Plugin 'tpope/vim-fugitive'
+Plugin 'solars/github-vim'
 
 call vundle#end()
 
