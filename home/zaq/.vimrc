@@ -26,6 +26,9 @@ Plugin 'terryma/vim-multiple-cursors'
 Plugin 'tpope/vim-fugitive'
 Plugin 'solars/github-vim'
 
+Plugin 'scrooloose/syntastic'
+Plugin 'godlygeek/tabular'
+
 call vundle#end()
 
 " Some Linux distributions set filetype in /etc/vimrc.
