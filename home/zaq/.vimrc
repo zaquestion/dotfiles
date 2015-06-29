@@ -25,6 +25,7 @@ Plugin 'terryma/vim-multiple-cursors'
 
 Plugin 'tpope/vim-fugitive'
 Plugin 'solars/github-vim'
+Plugin 'christoomey/vim-system-copy'
 
 Plugin 'scrooloose/syntastic'
 Plugin 'godlygeek/tabular'
