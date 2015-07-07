@@ -75,11 +75,6 @@ map <C-j> <C-w>j
 map <C-k> <C-w>k
 map <C-l> <C-w>l
 
-map <C-H> <C-w>H
-map <C-J> <C-w>J
-map <C-K> <C-w>K
-map <C-L> <C-w>L
-
 "leader config
 let mapleader=","
 
