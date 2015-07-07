@@ -67,16 +67,21 @@ set smartcase
 set hlsearch
 nnoremap <CR> :noh<CR>
 
+set pastetoggle=<F2>
+
 "Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
 map <C-k> <C-w>k
 map <C-l> <C-w>l
 
-"map <C-H> <C-w>H
-"map <C-J> <C-w>J
-"map <C-K> <C-w>K
-"map <C-L> <C-w>L
+map <C-H> <C-w>H
+map <C-J> <C-w>J
+map <C-K> <C-w>K
+map <C-L> <C-w>L
+
+"leader config
+let mapleader=","
 
 "ctags config
 function! UpdateTags()
