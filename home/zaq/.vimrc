@@ -41,9 +41,9 @@ endif
 set rtp+=/usr/local/go/misc/vim " replace $GOROOT with the output of: go env GOROOT
 filetype plugin indent on
 syntax on
-noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
-syntax on
+let g:ag_prg="ag --ignore-dir Godeps --vimgrep --smart-case"
+noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
