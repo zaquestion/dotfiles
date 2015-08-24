@@ -13,6 +13,18 @@ export PS1="\u@\h:\w\[\033[m\]\$(__git_ps1)\$ "
 source ~/.git-completion.bash
 source ~/.git-prompt.sh
 
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=100000
+HISTFILESIZE=100000
+
+# Avoid duplicates
+export HISTCONTROL=ignoredups:erasedups
+# When the shell exits, append to the history file instead of overwriting it
+shopt -s histappend
+
+# After each command, append to the history file and reread it
+export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+
 #color stuff
 if [ "$TERM" = "xterm" ] ; then
     if [ -z "$COLORTERM" ] ; then
@@ -41,7 +53,7 @@ if [ "$TERM" = "xterm" ] ; then
                 echo "Warning: Unrecognized COLORTERM: $COLORTERM"
                 ;;
         esac
-    fi  
+    fi
 fi
 
 SCREEN_COLORS="`tput colors`"
