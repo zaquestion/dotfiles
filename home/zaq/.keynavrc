@@ -18,10 +18,10 @@ s is a keynavrc file. Yours should live in
 #
 # Project page; http://www.semicomplete.com/projects/keynav
 # Use 'clear' to blow away any previous keybindings
-#clear
+clear
 
 # Use 'daemonize' to background ourselves.
-#daemonize
+daemonize
 
 ctrl+semicolon start
 Escape end
