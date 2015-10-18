@@ -1,11 +1,14 @@
 URxvt.perl-lib: /usr/lib/urxvt/perl
-URxvt.perl-ext-common: clipboard,font-size,matcher
+URxvt.perl-ext-common: clipboard,font-size,matcher,url-select,keyboard-select
 URxvt.keysym.C-C:    perl:clipboard:copy
 URxvt.keysym.C-V:    perl:clipboard:paste
 URxvt.iso14755: False
 
 URxvt*urlLauncher: /usr/local/bin/firefox
 URxvt*matcher.button: 1
+URxvt.keysym.C-u: perl:url-select:select_next
+
+URxvt.keysym.C-s: perl:keyboard-select:activate
 
 URxvt.font: xft:terminus:size=10
 URxvt.keysym.C-S-plus:  font-size:increase
@@ -33,7 +36,8 @@ URxvt*color14:	    #8abeb7
 URxvt*color15:	    #ecebec
 
 URxvt*scrollBar:    False
-! Not currently working but supposeofly useful for disabling terminal scrolling
-! in paged applications
-! URxvt*secondaryScreen: 1
-! URxvt*secondaryScroll: 0
+URxvt*secondaryScreen: 1
+URxvt*secondaryScroll: 0
+
+URxvt.copyCommand: xsel --selection --input
+URxvt.pasteCommand: xsel --selection --output
