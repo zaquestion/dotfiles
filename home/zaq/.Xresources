@@ -38,6 +38,7 @@ URxvt*color15:	    #ecebec
 URxvt*scrollBar:    False
 URxvt*secondaryScreen: 1
 URxvt*secondaryScroll: 0
+URxvt*saveLines: 10000
 
 URxvt.copyCommand: xsel --selection --input
 URxvt.pasteCommand: xsel --selection --output
