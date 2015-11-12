@@ -67,7 +67,12 @@ sub key_press {
 	my ($self, $event, $keysym, $char) = @_;
 	my $key = chr($keysym);
 
-	if (lc($key) eq 'c' && $event->{state} & urxvt::ControlMask) {
+	# If Ctrl-C, or Ctrl-[ is pressed, then deactivate
+	if ((lc($key) eq 'c' && $event->{state} & urxvt::ControlMask) ||
+   		(lc($key) eq '[' && $event->{state} & urxvt::ControlMask)) {
+		deactivate($self);
+	}
+	elsif (lc($key) eq '[' && $event->{state} & urxvt::ControlMask) {
 		deactivate($self);
 	} elsif ($self->{search}) {
 		if ($keysym == 0xff1b) {
