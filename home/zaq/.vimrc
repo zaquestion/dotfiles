@@ -48,6 +48,9 @@ noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
 
+autocmd BufNewFile,BufRead *.diag set filetype=diag
+autocmd BufNewFile,BufRead *.gv set filetype=graphviz
+
 colorscheme monokai
 
 set relativenumber
