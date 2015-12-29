@@ -3,7 +3,10 @@ export projects=~/projects
 export GOPATH=$projects/go
 export GOROOT=/usr/local/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-alias git=hub
+export EDITOR=/usr/bin/vim
+if which hub; then
+	alias git=hub
+fi
 alias ag="ag --ignore-dir Godeps"
 
 export zaq=$GOPATH/src/github.com/zaqthefreshman
