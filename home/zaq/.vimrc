@@ -94,3 +94,6 @@ nmap <F8> :TagbarToggle<CR>
 let g:UltiSnipsExpandTrigger="<c-l>"
 let g:UltiSnipsJumpForwardTrigger="<c-m>"
 let g:UltiSnipsJumpBackwardTrigger="<c-b>"
+
+let g:netrw_liststyle=3
+let g:netrw_bufsettings = 'noma nomod nu nobl nowrap ro'
