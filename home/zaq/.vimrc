@@ -56,32 +56,36 @@ colorscheme monokai
 set relativenumber
 set number
 
-"remove awful omnicomplete scratch preview
+" Remove awful omnicomplete scratch preview
 set completeopt-=preview
 
-"shows matching ({[]})
+" Shows matching ({[]})
 set showmatch
 
-"allows case insensitive searching with smart exceptions
+" Allows case insensitive searching with smart exceptions
 set ignorecase
 set smartcase
 
-"do highlighting on search and macro do clear search
+" Path completion
+set wildmode=longest,list
+set wildmenu
+
+" Do highlighting on search and macro do clear search
 set hlsearch
 nnoremap <CR> :noh<CR>
 
 set pastetoggle=<F2>
 
-"Keybinding hotkeys for switching windows
+" Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
 map <C-k> <C-w>k
 map <C-l> <C-w>l
 
-"leader config
+" Leader config
 let mapleader=","
 
-"ctags config
+" ctags config
 function! UpdateTags()
   	silent! !~/scripts/update-tags.sh %:p:h %:t &
 	redraw!
