@@ -99,3 +99,5 @@ let g:UltiSnipsJumpBackwardTrigger="<c-b>"
 
 let g:netrw_liststyle=3
 let g:netrw_bufsettings = 'noma nomod nu nobl nowrap ro'
+
+:tnoremap <Esc> <C-\><C-n>
