@@ -61,7 +61,7 @@ set completeopt-=preview
 set showmatch
 
 " Allows case insensitive searching with smart exceptions
-set ignorecase
+set ignorecase
 set smartcase
 
 " Path completion
@@ -101,3 +101,4 @@ let g:netrw_liststyle=3
 let g:netrw_bufsettings = 'noma nomod nu nobl nowrap ro'
 
 :tnoremap <Esc> <C-\><C-n>
+let g:terminal_scrollback_buffer_size = 2147483647
