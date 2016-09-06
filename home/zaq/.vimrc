@@ -6,13 +6,12 @@ set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
 " let Vundle manage Vundle, required
-Plugin 'gmarik/Vundle.vim'
+Plugin 'VundleVim/Vundle.vim'
 
 Plugin 'Valloric/YouCompleteMe'
 Plugin 'sirver/ultisnips'
 Plugin 'honza/vim-snippets'
 
-Plugin 'marijnh/tern_for_vim'
 Plugin 'fatih/vim-go'
 
 Plugin 'majutsushi/tagbar'
@@ -28,7 +27,6 @@ Plugin 'solars/github-vim'
 Plugin 'christoomey/vim-system-copy'
 
 Plugin 'scrooloose/syntastic'
-Plugin 'godlygeek/tabular'
 
 call vundle#end()
 
@@ -101,3 +99,5 @@ let g:UltiSnipsJumpBackwardTrigger="<c-b>"
 
 let g:netrw_liststyle=3
 let g:netrw_bufsettings = 'noma nomod nu nobl nowrap ro'
+
+:tnoremap <Esc> <C-\><C-n>
