@@ -51,6 +51,9 @@ autocmd BufNewFile,BufRead *.gv set filetype=graphviz
 
 colorscheme monokai
 
+set splitbelow
+set splitright
+
 set relativenumber
 set number
 
