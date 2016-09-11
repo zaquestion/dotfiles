@@ -10,6 +10,8 @@ setlocal formatoptions-=t
 setlocal comments=s1:/*,mb:*,ex:*/,://
 setlocal commentstring=//\ %s
 
+nnoremap <CR> :GoDef<CR>
+
 let b:undo_ftplugin = "setl fo< com< cms<"
 
 let g:syntastic_go_checkers = ['golint', 'govet', 'errcheck']
