@@ -17,7 +17,7 @@ Plugin 'fatih/vim-go'
 Plugin 'majutsushi/tagbar'
 Plugin 'rking/ag.vim'
 
-Plugin 'zaqthefreshman/vim-monokai'
+Plugin 'zaquestion/vim-monokai'
 Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'terryma/vim-multiple-cursors'
