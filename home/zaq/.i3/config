@@ -17,16 +17,13 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec --no-startup-id st
 
 # kill focused window
 bindsym $mod+Shift+Q kill
 
-#restart networking
-bindsym $mod+Shift+N exec gksu service networking restart
-
 # start dmenu (a program launcher)
-bindsym $mod+d exec dmenu_run
+bindsym $mod+d exec --no-startup-id dmenu_run
 
 #move workspace
 bindsym $mod+Shift+T move workspace to output left
@@ -69,18 +66,6 @@ bindsym $mod+a focus parent
 # focus the child container
 #bindcode $mod+d focus child
 
-#workspace conf
-workspace 1 output DVI-0
-workspace 2 output DVI-0
-workspace 3 output DVI-0
-workspace 4 output DVI-0
-workspace 5 output DVI-0
-workspace 6 output DisplayPort-0
-workspace 7 output DisplayPort-0
-workspace 8 output DisplayPort-0
-workspace 9 output DisplayPort-0
-workspace 0 output DisplayPort-0
-
 # moving workspaces
 # feature doesn't seem to work on this box
 
@@ -120,18 +105,18 @@ mode "resize" {
         # They resize the border in the direction you pressed, e.g.
         # when pressing left, the window is resized so that it has
         # more space on its left
-        
-        bindsym h resize shrink left 10 px or 10 ppt 
-        bindsym Shift+H resize grow   left 10 px or 10 ppt 
-        
-        bindsym j resize shrink down 10 px or 10 ppt 
-        bindsym Shift+J resize grow   down 10 px or 10 ppt 
-        
-        bindsym k resize shrink up 10 px or 10 ppt 
-        bindsym Shift+K resize grow   up 10 px or 10 ppt 
-        
-        bindsym l resize shrink right 10 px or 10 ppt 
-        bindsym Shift+L resize grow   right 10 px or 10 ppt 
+
+        bindsym h resize shrink left 10 px or 10 ppt
+        bindsym Shift+H resize grow   left 10 px or 10 ppt
+
+        bindsym j resize shrink down 10 px or 10 ppt
+        bindsym Shift+J resize grow   down 10 px or 10 ppt
+
+        bindsym k resize shrink up 10 px or 10 ppt
+        bindsym Shift+K resize grow   up 10 px or 10 ppt
+
+        bindsym l resize shrink right 10 px or 10 ppt
+        bindsym Shift+L resize grow   right 10 px or 10 ppt
 
         # back to normal: Enter or Escape
 bindsym Return mode "default"
