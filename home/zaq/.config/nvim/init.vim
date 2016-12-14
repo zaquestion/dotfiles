@@ -20,13 +20,11 @@ Plugin 'rking/ag.vim'
 Plugin 'zaquestion/vim-monokai'
 Plugin 'tmhedberg/SimpylFold'
 
-Plugin 'terryma/vim-multiple-cursors'
-
 Plugin 'tpope/vim-fugitive'
 Plugin 'solars/github-vim'
-Plugin 'christoomey/vim-system-copy'
 
 Plugin 'scrooloose/syntastic'
+Plugin 'Chiel92/vim-autoformat'
 
 call vundle#end()
 
@@ -103,5 +101,8 @@ let g:UltiSnipsJumpBackwardTrigger="<c-b>"
 let g:netrw_liststyle=3
 let g:netrw_bufsettings = 'noma nomod nu nobl nowrap ro'
 
-:tnoremap <Esc> <C-\><C-n>
+tnoremap <Esc> <C-\><C-n>
 let g:terminal_scrollback_buffer_size = 2147483647
+
+let g:formatters_python = ['yapf']
+let g:formatdef_yapf = "'yapf --style=\"{based_on_style: pep8, indent_width: 4, join_multiple_lines: true, SPACE_BETWEEN_ENDING_COMMA_AND_CLOSING_BRACKET: false, COALESCE_BRACKETS: true, DEDENT_CLOSING_BRACKETS: true, COLUMN_LIMIT: 120}\" -l '.a:firstline.'-'.a:lastline"
