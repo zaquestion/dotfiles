@@ -1,12 +1,13 @@
-command! Firefox call OpenInFireFox()
+command! qute call OpenInQuteBrowser()
 
-function! OpenInFireFox()
+function! OpenInQuteBrowser()
 	let path=expand("%:p")
 	let file=expand("%:t")
 	let svgname=split(l:file, '\.')[0].".svg"
-  	execute 'silent! !firefox '.l:svgname
+  	execute 'silent! !qutebrowser'.l:svgname
 	redraw!
 endfunction
+
 
 function! RenderSeqSvg()
 	let path=expand("%:p")
