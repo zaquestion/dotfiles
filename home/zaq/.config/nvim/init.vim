@@ -15,18 +15,19 @@ Plugin 'honza/vim-snippets'
 Plugin 'fatih/vim-go'
 
 Plugin 'majutsushi/tagbar'
-Plugin 'rking/ag.vim'
+Plugin 'mileszs/ack.vim'
 
 Plugin 'zaquestion/vim-monokai'
 Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'tpope/vim-fugitive'
-Plugin 'solars/github-vim'
 
 Plugin 'scrooloose/syntastic'
 Plugin 'Chiel92/vim-autoformat'
 
 call vundle#end()
+
+set timeoutlen=1000 ttimeoutlen=10
 
 " Some Linux distributions set filetype in /etc/vimrc.
 " Clear filetype flags before changing runtimepath to force Vim to reload them.
@@ -38,7 +39,15 @@ set rtp+=/usr/local/go/misc/vim " replace $GOROOT with the output of: go env GOR
 filetype plugin indent on
 syntax on
 
-let g:ag_prg="ag --ignore-dir Godeps --vimgrep --smart-case"
+if executable('ag')
+	let g:ackprg = 'ag --ignore-dir vendor --vimgrep --smart-case'
+endif
+let g:ackhighlight = 1
+
+" use Ag instead of Ack when typing
+cnoreabbrev ag Ack
+cnoreabbrev Ag Ack
+
 noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
 
 "remove trailing whitespace on save
@@ -62,7 +71,7 @@ set completeopt-=preview
 set showmatch
 
 " Allows case insensitive searching with smart exceptions
-set ignorecase
+set ignorecase
 set smartcase
 
 " Path completion
@@ -71,7 +80,7 @@ set wildmenu
 
 " Do highlighting on search and macro do clear search
 set hlsearch
-nnoremap <CR> :let @/ = ""<CR>
+nnoremap <CR> :noh
 
 set pastetoggle=<F2>
 
