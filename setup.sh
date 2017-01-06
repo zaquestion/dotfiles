@@ -27,40 +27,6 @@ mkdir -p ~/projects/go/pkg
 mkdir -p ~/projects/go/bin
 mkdir -p ~/projects/python
 
-# blow away default
-rm ~/.bashrc
-ln -s `pwd`/home/zaq/.bashrc ~/.bashrc
-# needed for PATH and GO env vars
-set +x
-source ~/.bashrc
-set -x
-
-# Get Applications
-if ! [ -x "$(command -v go)" ]; then
-	echo "===== Downloading latest GoLang ====="
-	curl `curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4` > ~/downloads/golang.tar.gz
-	sudo tar -C /usr/local/ ~/downloads/golang.tar.gz
-fi
-
-if ! [ -x "$(command -v hub)" ]; then
-	echo "===== Getting hub ====="
-	go get github.com/github/hub
-fi
-
-if ! [ -x "$(command -v pyenv)" ]; then
-	echo "===== Intalling pyenv ====="
-	curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-fi
-
-if ! [ -x "$(command -v st)" ]; then
-	 git clone https://go.googlesource.com/image /tmp/image-go-fonts
-	 sudo cp /tmp/image-go-fonts/font/gofont/ttfs/Go-Mono* /usr/share/fonts/truetype/
-	 git clone git://git.suckless.org/st ~/projects/c/st
-	 cp ~/st/* ~/projects/c/st/
-	 (cd ~/projects/c/st && make install)
-fi
-
-
 echo "===== Replicating Folder Structure ====="
 # Find all directories and make in $HOME. Directories cannot be symlinked from
 # dotfiles as they won't always have all of the needed configs and I don't want
@@ -71,9 +37,48 @@ echo "===== Symlinking Files ====="
 # Find all files and create symlinks from $HOME
 (cd home/zaq && find . -type f -exec test ! -r ~/'{}' \; -and -exec ln -s `pwd`/'{}' ~/'{}' \;)
 
+# needed for PATH and GO env vars
+set +x
+source ~/.bashrc
+set -x
+
 echo '===== "system" packages ====='
 sudo apt-get install neovim tmux keychain xclip scrot graphviz keynav mercurial
 sudo apt-get install -y build-essential cmake
+
+# Get Applications
+if ! [ -x "$(command -v go)" ]; then
+	set +x; echo "===== Downloading latest GoLang ====="; set -x
+	curl `curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4` > ~/downloads/golang.tar.gz
+	sudo tar -C /usr/local/ ~/downloads/golang.tar.gz
+fi
+
+if ! [ -x "$(command -v hub)" ]; then
+	set +x; echo "===== Getting hub ====="; set -x
+	go get github.com/github/hub
+fi
+
+if ! [ -x "$(command -v pyenv)" ]; then
+	set +x; echo "===== Installing pyenv ====="; set -x
+	curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
+fi
+
+if ! [ -x "$(command -v dwm)" ]; then
+	set +x; echo "===== Compiling dwm ====="; set -x
+	go get github.com/zaquestion/gods
+	git clone git://git.suckless.org/dwm ~/projects/c/dwm
+	cp ~/dwm/* ~/projects/c/dwm/
+	(cd ~/projects/c/dwm && sudo make install)
+fi
+
+if ! [ -x "$(command -v st)" ]; then
+	set +x; echo "===== Compiling st ====="; set -x
+	git clone https://go.googlesource.com/image /tmp/image-go-fonts
+	sudo cp /tmp/image-go-fonts/font/gofont/ttfs/Go-Mono* /usr/share/fonts/truetype/
+	git clone git://git.suckless.org/st ~/projects/c/st
+	cp ~/st/* ~/projects/c/st/
+	(cd ~/projects/c/st && sudo make install)
+fi
 
 # Python Stuff
 echo "===== Python Environment ====="
