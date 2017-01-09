@@ -16,7 +16,6 @@ if [ ! -r ~/.hub-completion.bash ]; then
 fi
 source ~/.git-completion.bash
 
-eval `keychain --eval --agents ssh id_rsa id_rsa_zaq`
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 

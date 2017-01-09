@@ -18,7 +18,6 @@ test ! -d ~/downloads && test -d ~/Downloads && mv ~/Downloads ~/downloads
 mkdir -p ~/downloads
 
 xdg-user-dirs-update --set DOWNLOAD ~/downloads
-
 mkdir -p ~/scripts
 mkdir -p ~/projects/c
 mkdir -p ~/projects/go
@@ -82,13 +81,13 @@ fi
 
 # Python Stuff
 echo "===== Python Environment ====="
-sudo apt-get install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+sudo apt-get install -y make pyenv openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
 sudo apt-get install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
 
 if pyenv versions | grep '3\.6\.0'; then
 	pyenv global 3.6.0
 else
-	pyenv install 3.6.0 && pyenv global 3.6.0
+	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.0 && pyenv global 3.6.0
 fi
 
 set +x
