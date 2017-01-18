@@ -1,5 +1,14 @@
 #/usr/bin/env bash
 
+# Note: You'll notice a lot of `set +/-x` in this file. This controls where
+# bash echos the executed commands.
+# set -x; # enables
+# set +x; # disables
+# When enabled all executed commands are echo'd included those in executed scripts
+# Example `set -x && source ~/.bashrc` would echo every command ~/.bashrc
+# Logging everything would be fairly verbose therefore some commands are
+# disabled line by line with `set +x; command; set -x`
+
 test -r ~/.dotfiles_initialized && echo "dotfiles already setup; ~/.dotfiles_initialized exists!" && exit 0
 
 read -p "Setup requires an internet connection, is long, and requires checkins. Is this okay? (Y/n)? " answer
@@ -32,24 +41,32 @@ echo "===== Replicating Folder Structure ====="
 # to track everything in them nor maintain a .gitignore
 (cd home/zaq && find . -type d -exec test ! -d ~/'{}' \; -and -exec mkdir ~/'{}' \;)
 
+test -f ~/.bashrc && \
+read -p "Existing ~/.bashrc found. Overwrite (Y/n)? " answer && \
+case ${answer:0:1} in
+    Y )
+	    rm ~/.bashrc
+    ;;
+    * )
+    ;;
+esac
+
 echo "===== Symlinking Files ====="
 # Find all files and create symlinks from $HOME
 (cd home/zaq && find . -type f -exec test ! -r ~/'{}' \; -and -exec ln -s `pwd`/'{}' ~/'{}' \;)
 
 # needed for PATH and GO env vars
-set +x
-source ~/.bashrc
-set -x
+set +x; source ~/.bashrc; set -x
 
 echo '===== "system" packages ====='
-sudo apt-get install neovim tmux keychain xclip scrot graphviz keynav mercurial
+sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav
 sudo apt-get install -y build-essential cmake
 
 # Get Applications
 if ! [ -x "$(command -v go)" ]; then
 	set +x; echo "===== Downloading latest GoLang ====="; set -x
 	curl `curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4` > ~/downloads/golang.tar.gz
-	sudo tar -C /usr/local/ ~/downloads/golang.tar.gz
+	sudo tar -C /usr/local/ -xzf ~/downloads/golang.tar.gz
 fi
 
 if ! [ -x "$(command -v hub)" ]; then
@@ -60,6 +77,7 @@ fi
 if ! [ -x "$(command -v pyenv)" ]; then
 	set +x; echo "===== Installing pyenv ====="; set -x
 	curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
+	set +x; source ~/.bashrc; set -x
 fi
 
 if ! [ -x "$(command -v dwm)" ]; then
@@ -79,6 +97,7 @@ if ! [ -x "$(command -v st)" ]; then
 	(cd ~/projects/c/st && sudo make install)
 fi
 
+
 # Python Stuff
 echo "===== Python Environment ====="
 sudo apt-get install -y make pyenv openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
@@ -90,15 +109,27 @@ else
 	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.0 && pyenv global 3.6.0
 fi
 
-set +x
-source ~/.bashrc
-set -x
-pip install neovim seqdiag yapf
+set +x; source ~/.bashrc; set -x
+pip install neovim seqdiag yapf awscli
 
 # Config Applications
 echo "===== nvim Environment ====="
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+test ! -d ~/.vim/bundle/Vundle.vim && git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim && \
 nvim +PluginInstall +GoInstallBinaries +qall && \
 (cd ~/.vim/bundle/YouCompleteMe && ./install.py --clang-completer --gocode-completer)
+
+# From https://docs.docker.com/engine/installation/linux/debian/
+echo "===== Docker ====="
+sudo apt-get install -y apt-transport-https ca-certificates gnupg2 && \
+sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
+echo "deb https://apt.dockerproject.org/repo debian-jessie main" | sudo tee -a /etc/apt/sources.list.d/docker.list && \
+
+sudo apt-get update && \
+sudo apt-get install -y docker-engine && \
+sudo groupadd docker && \
+sudo gpasswd -a ${USER} docker && \
+
+sudo curl -L "https://github.com/docker/compose/releases/download/1.9.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+sudo chmod a+x /usr/local/bin/docker-compose
 
 touch ~/.dotfiles_initialized
