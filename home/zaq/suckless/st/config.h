@@ -5,7 +5,7 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char font[] = "Go Mono:pixelsize=14:antialias=true:autohint=true";
+static char font[] = "Go Mono:pixelsize=16:antialias=true:autohint=true";
 static int borderpx = 2;
 
 /*
@@ -119,6 +119,12 @@ static const char *colorname[] = {
 static unsigned int defaultfg = 7;
 static unsigned int defaultbg = 0;
 static unsigned int defaultcs = 256; static unsigned int defaultrcs = 257;
+
+/*
+ * Default columns and rows numbers
+ */
+static unsigned int cols = 80;
+static unsigned int rows = 24;
 
 /*
  * Default shape of cursor

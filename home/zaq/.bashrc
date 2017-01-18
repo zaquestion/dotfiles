@@ -5,16 +5,20 @@ export GOROOT=/usr/local/go
 export PATH=~/bin:$GOPATH/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
 export EDITOR=$(which vim)
 
+eval `keychain --eval --agents ssh id_rsa id_rsa_zaq`
+
 # Source external
 if [ ! -r ~/.git-completion.bash ]; then
 	echo "downloading .git-completion.bash"
 	curl -s 'https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash' > ~/.git-completion.bash
 fi
-if [ ! -r ~/.hub-completion.bash ]; then
-	echo "downloading .hub-completion.bash"
-	curl -s 'https://raw.githubusercontent.com/github/hub/master/etc/hub.bash_completion.sh' > ~/.hub-completion.bash
-fi
 source ~/.git-completion.bash
+
+if [ ! -r ~/.aws-completion.bash ]; then
+	echo "downloading .aws-completion.bash"
+	curl -s 'https://raw.githubusercontent.com/aws/aws-cli/master/bin/aws_completer' > ~/.aws-completion.bash
+fi
+complete -C '~/.aws-completion.bash' aws
 
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
@@ -26,8 +30,17 @@ if which nvim; then
 fi
 if which hub; then
 	alias git=hub
+	if [ ! -r ~/.hub-completion.bash ]; then
+		echo "downloading .hub-completion.bash"
+		curl -s 'https://raw.githubusercontent.com/github/hub/master/etc/hub.bash_completion.sh' > ~/.hub-completion.bash
+	fi
 	source ~/.hub-completion.bash
 fi
+
+if [ ! -x ~/.bashrc.local ]; then
+	source ~/.bashrc.local
+fi
+
 
 # User Variables
 export zaq=$GOPATH/src/github.com/zaquestion
