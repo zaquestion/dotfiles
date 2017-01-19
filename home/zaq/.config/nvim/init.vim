@@ -95,6 +95,7 @@ map - <C-w>-
 
 " Leader config
 let mapleader=","
+map <leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
 
 " ctags config
 function! UpdateTags()
