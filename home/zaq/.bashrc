@@ -82,3 +82,4 @@ HISTFILESIZE=10000000
 export HISTCONTROL=ignoredups:erasedups
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
+shopt -s globstar
