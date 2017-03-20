@@ -20,6 +20,11 @@ if [ ! -r ~/.aws-completion.bash ]; then
 fi
 complete -C '~/.aws-completion.bash' aws
 
+if [ ! -r ~/.docker-compose-completion.bash ]; then
+	curl -sL "https://raw.githubusercontent.com/docker/compose/$(docker-compose version --short)/contrib/completion/bash/docker-compose" > ~/.docker-compose-completion.bash
+fi
+source ~/.docker-compose-completion.bash
+
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 
