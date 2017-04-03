@@ -80,11 +80,25 @@ export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000000
-HISTFILESIZE=10000000
+HISTSIZE=-1
+HISTFILESIZE=-1
 
 # Avoid duplicates
-export HISTCONTROL=ignoredups:erasedups
+export HISTCONTROL=erasedups
+export PROMPT_COMMAND="history -a;"
 # When the shell exits, append to the history file instead of overwriting it
+shopt -s cmdhist
 shopt -s histappend
 shopt -s globstar
+
+# Once a i-search fails allows you to modify the search and keep searching (readline)
+shopt -s histreedit
+
+# Prevent C-s from sent XOF (pause)
+# Allows C-s to be used in i-search
+stty -ixon
+
+# Disables caps lock key
+# reset: setxkbmap -option
+setxkbmap -option ctrl:nocaps
+
