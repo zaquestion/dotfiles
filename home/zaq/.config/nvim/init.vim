@@ -80,7 +80,7 @@ set wildmenu
 
 " Do highlighting on search and macro do clear search
 set hlsearch
-nnoremap <CR> :noh
+nnoremap <leader><CR> :noh
 
 set pastetoggle=<F2>
 
