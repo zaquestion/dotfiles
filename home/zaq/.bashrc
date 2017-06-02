@@ -13,7 +13,6 @@ if [ ! -r ~/.git-completion.bash ]; then
 	curl -s 'https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash' > ~/.git-completion.bash
 fi
 source ~/.git-completion.bash
-
 if [ ! -r ~/.aws-completion.bash ]; then
 	echo "downloading .aws-completion.bash"
 	curl -s 'https://raw.githubusercontent.com/aws/aws-cli/master/bin/aws_completer' > ~/.aws-completion.bash
@@ -28,6 +27,7 @@ source ~/.docker-compose-completion.bash
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 
+xset r rate 200 100
 # "Application" Alias
 if which nvim; then
 	export EDITOR=$(which nvim)
@@ -80,7 +80,7 @@ export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=-1
+HISTSIZE=999999
 HISTFILESIZE=-1
 
 # Avoid duplicates
