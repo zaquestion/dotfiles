@@ -59,14 +59,14 @@ echo "===== Symlinking Files ====="
 set +x; source ~/.bashrc; set -x
 
 echo '===== "system" packages ====='
-sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav
-sudo apt-get install -y build-essential cmake
+sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav curl
+sudo apt-get install -y build-essential cmake libxinerama-dev
 
 # Get Applications
 if ! [ -x "$(command -v go)" ]; then
 	set +x; echo "===== Downloading latest GoLang ====="; set -x
-	curl `curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4` > ~/downloads/golang.tar.gz
-	sudo tar -C /usr/local/ -xzf ~/downloads/golang.tar.gz
+	curl `curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4` > /tmp/golang.tar.gz
+	sudo tar -C /usr/local/ -xzf /tmp/golang.tar.gz
 fi
 
 if ! [ -x "$(command -v hub)" ]; then
