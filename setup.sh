@@ -59,7 +59,7 @@ echo "===== Symlinking Files ====="
 set +x; source ~/.bashrc; set -x
 
 echo '===== "system" packages ====='
-sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav curl
+sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav curl x11-server-utils xinit
 sudo apt-get install -y build-essential cmake libxinerama-dev
 
 # Get Applications
@@ -120,16 +120,17 @@ nvim +PluginInstall +GoInstallBinaries +qall && \
 
 # From https://docs.docker.com/engine/installation/linux/debian/
 echo "===== Docker ====="
+compose_version=$(curl -sL "https://github.com/docker/compose/tags" | grep tag-name | grep --only '>[0-9\.]\+<' | head -n1 | cut -c 2- | rev | cut -c 2- | rev)
 sudo apt-get install -y apt-transport-https ca-certificates gnupg2 && \
 sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
-echo "deb https://apt.dockerproject.org/repo debian-jessie main" | sudo tee -a /etc/apt/sources.list.d/docker.list && \
+echo "deb https://apt.dockerproject.org/repo debian-jessie main" | sudo tee /etc/apt/sources.list.d/docker.list && \
 
 sudo apt-get update && \
 sudo apt-get install -y docker-engine && \
 sudo groupadd docker && \
 sudo gpasswd -a ${USER} docker && \
 
-sudo curl -L "https://github.com/docker/compose/releases/download/1.9.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+sudo curl -L "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
 sudo chmod a+x /usr/local/bin/docker-compose
 
 touch ~/.dotfiles_initialized
