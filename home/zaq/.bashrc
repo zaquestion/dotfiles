@@ -80,12 +80,14 @@ export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=999999
-HISTFILESIZE=-1
+HISTSIZE=9999999
+HISTFILESIZE=9999999
 
 # Avoid duplicates
 export HISTCONTROL=erasedups
 export PROMPT_COMMAND="history -a;"
+# prevents reused lines from being commited
+set revert-all-at-newline on
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s cmdhist
 shopt -s histappend

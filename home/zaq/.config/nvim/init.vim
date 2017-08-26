@@ -24,6 +24,7 @@ Plugin 'tpope/vim-fugitive'
 
 Plugin 'scrooloose/syntastic'
 Plugin 'Chiel92/vim-autoformat'
+Plugin 'godlygeek/tabular'
 
 call vundle#end()
 
