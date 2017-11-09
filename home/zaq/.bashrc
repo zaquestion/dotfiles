@@ -41,6 +41,9 @@ if which hub; then
 	fi
 	source ~/.hub-completion.bash
 fi
+if which lab; then
+	alias git=lab
+fi
 
 if [ ! -x ~/.bashrc.local ]; then
 	source ~/.bashrc.local
@@ -54,6 +57,7 @@ export pylab=$projects/python/TuneLab/
 
 # User Alias
 alias ag="ag --ignore-dir vendor"
+alias xclip="xclip -selection clipboard"
 
 # Terminal Settings
 export TERM="xterm-256color"

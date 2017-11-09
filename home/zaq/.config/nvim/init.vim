@@ -21,10 +21,18 @@ Plugin 'zaquestion/vim-monokai'
 Plugin 'tmhedberg/SimpylFold'
 
 Plugin 'tpope/vim-fugitive'
+Plugin 'shumphrey/fugitive-gitlab.vim'
 
 Plugin 'scrooloose/syntastic'
 Plugin 'Chiel92/vim-autoformat'
 Plugin 'godlygeek/tabular'
+
+" PHP
+" $ sudo apt install phpmd php-codesniffer
+" ctags.io
+Plugin 'shawncplus/phpcomplete.vim'
+Plugin 'StanAngeloff/php.vim'
+Plugin 'joonty/vdebug'
 
 call vundle#end()
 
@@ -41,7 +49,7 @@ filetype plugin indent on
 syntax on
 
 if executable('ag')
-	let g:ackprg = 'ag --ignore-dir vendor --vimgrep --smart-case'
+	let g:ackprg = 'ag -Q --ignore-dir vendor --ignore-dir Vendors --ignore-dir app/ext/vendors'
 endif
 let g:ackhighlight = 1
 
@@ -49,7 +57,8 @@ let g:ackhighlight = 1
 cnoreabbrev ag Ack
 cnoreabbrev Ag Ack
 
-noremap <C-\> :exec 'Ag!' expand('<cword>') $projects<CR>
+"noremap <C-\> :exec 'Ack!' expand('<cword>') getcwd()<CR>
+noremap <C-\> :exec 'Ack!' '"'.matchstr(getline("."), expand('<cword>').'(\?').'"' getcwd()<CR>
 
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
@@ -59,6 +68,9 @@ autocmd BufNewFile,BufRead *.gv set filetype=graphviz
 
 colorscheme monokai
 
+set lazyredraw
+
+" split preferences
 set splitbelow
 set splitright
 
@@ -97,13 +109,8 @@ map - <C-w>-
 " Leader config
 let mapleader=","
 map <leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
+map <leader>E :Explore<CR>
 
-" ctags config
-function! UpdateTags()
-  	silent! !~/scripts/update-tags.sh %:p:h %:t &
-	redraw!
-endfunction
-autocmd BufWritePost * :call UpdateTags()
 set tags=$projects/tags
 nmap <F8> :TagbarToggle<CR>
 
@@ -120,3 +127,7 @@ let g:terminal_scrollback_buffer_size = 2147483647
 
 let g:formatters_python = ['yapf']
 let g:formatdef_yapf = "'yapf --style=\"{based_on_style: pep8, indent_width: 4, join_multiple_lines: true, SPACE_BETWEEN_ENDING_COMMA_AND_CLOSING_BRACKET: false, COALESCE_BRACKETS: true, DEDENT_CLOSING_BRACKETS: true, COLUMN_LIMIT: 120}\" -l '.a:firstline.'-'.a:lastline"
+
+let @s  = '^/self\.dwdwicfg["lguwwi"]'
+
+let g:fugitive_gitlab_domains = ['https://gitlab.corp.tune.com']
