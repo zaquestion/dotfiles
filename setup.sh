@@ -65,7 +65,7 @@ sudo apt-get install -y build-essential cmake libxinerama-dev
 # Get Applications
 if ! [ -x "$(command -v go)" ]; then
 	set +x; echo "===== Downloading latest GoLang ====="; set -x
-	curl $(curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4) | sudo tar -C /usr/local/ -xzf -
+	curl -L $(curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4) | sudo tar -C /usr/local/ -xzf -
 fi
 
 if ! [ -x "$(command -v hub)" ]; then
