@@ -34,6 +34,9 @@ Plugin 'shawncplus/phpcomplete.vim'
 Plugin 'StanAngeloff/php.vim'
 Plugin 'joonty/vdebug'
 
+" Graphviz Dot
+Plugin 'wannesm/wmgraphviz.vim'
+
 call vundle#end()
 
 set timeoutlen=1000 ttimeoutlen=10
@@ -64,7 +67,7 @@ noremap <C-\> :exec 'Ack!' '"'.matchstr(getline("."), expand('<cword>').'(\?').'
 autocmd BufWritePre * :%s/\s\+$//e
 
 autocmd BufNewFile,BufRead *.diag set filetype=diag
-autocmd BufNewFile,BufRead *.gv set filetype=graphviz
+autocmd BufNewFile,BufRead *.gv set filetype=dot
 
 colorscheme monokai
 
@@ -108,8 +111,12 @@ map - <C-w>-
 
 " Leader config
 let mapleader=","
-map <leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
-map <leader>E :Explore<CR>
+" starts a :e command in the same directory as the current buffer
+nnoremap <leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
+nnoremap <leader>E :Explore<CR>
+" re-executes the last command
+nnoremap <leader><leader> @:
+nnoremap <leader>ft :exec 'sp ~/.vim/ftplugin/' . &filetype . '.vim' <CR>
 
 set tags=$projects/tags
 nmap <F8> :TagbarToggle<CR>

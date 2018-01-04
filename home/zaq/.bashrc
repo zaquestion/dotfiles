@@ -84,11 +84,11 @@ export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=9999999
-HISTFILESIZE=9999999
+HISTSIZE=-1
+HISTFILESIZE=-1
 
 # Avoid duplicates
-export HISTCONTROL=erasedups
+export HISTCONTROL=erasedups:ignoredups
 export PROMPT_COMMAND="history -a;"
 # prevents reused lines from being commited
 set revert-all-at-newline on
