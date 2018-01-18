@@ -99,7 +99,8 @@ fi
 
 # Python Stuff
 echo "===== Python Environment ====="
-sudo apt-get install -y make pyenv openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
+sudo apt-get install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
 sudo apt-get install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
 
 if pyenv versions | grep '3\.6\.0'; then
