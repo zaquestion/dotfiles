@@ -44,7 +44,7 @@ echo "===== Replicating Folder Structure ====="
 test -f ~/.bashrc && \
 read -p "Existing ~/.bashrc found. Overwrite (Y/n)? " answer && \
 case ${answer:0:1} in
-    Y )
+    y|Y )
 	    rm ~/.bashrc
     ;;
     * )
@@ -59,8 +59,10 @@ echo "===== Symlinking Files ====="
 set +x; source ~/.bashrc; set -x
 
 echo '===== "system" packages ====='
-sudo apt-get install -y neovim tmux keychain xclip scrot graphviz keynav curl x11-server-utils xinit
-sudo apt-get install -y build-essential cmake libxinerama-dev
+sudo apt update
+sudo apt install -y neovim tmux keychain xclip scrot graphviz keynav curl xinit
+sudo apt install -y x11-xserver-utils
+sudo apt install -y build-essential cmake libxinerama-dev
 
 # Get Applications
 if ! [ -x "$(command -v go)" ]; then
@@ -73,6 +75,11 @@ if ! [ -x "$(command -v hub)" ]; then
 	go get github.com/github/hub
 fi
 
+if ! [ -x "$(command -v lab)" ]; then
+	set +x; echo "===== Getting lab ====="; set -x
+	curl -s https://raw.githubusercontent.com/zaquestion/lab/master/install.sh | bash
+fi
+
 if ! [ -x "$(command -v pyenv)" ]; then
 	set +x; echo "===== Installing pyenv ====="; set -x
 	curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
@@ -83,7 +90,7 @@ if ! [ -x "$(command -v dwm)" ]; then
 	set +x; echo "===== Compiling dwm ====="; set -x
 	go get github.com/zaquestion/gods
 	git clone git://git.suckless.org/dwm ~/projects/c/dwm
-	cp ~/dwm/* ~/projects/c/dwm/
+	cp ~/suckless/dwm/* ~/projects/c/dwm/
 	(cd ~/projects/c/dwm && sudo make install)
 fi
 
@@ -92,21 +99,20 @@ if ! [ -x "$(command -v st)" ]; then
 	git clone https://go.googlesource.com/image /tmp/image-go-fonts
 	sudo cp /tmp/image-go-fonts/font/gofont/ttfs/Go-Mono* /usr/share/fonts/truetype/
 	git clone git://git.suckless.org/st ~/projects/c/st
-	cp ~/st/* ~/projects/c/st/
+	cp ~/suckless/st/* ~/projects/c/st/
 	(cd ~/projects/c/st && sudo make install)
 fi
 
 
 # Python Stuff
 echo "===== Python Environment ====="
-curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-sudo apt-get install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
-sudo apt-get install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
+sudo apt install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+sudo apt install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
 
-if pyenv versions | grep '3\.6\.0'; then
-	pyenv global 3.6.0
+if pyenv versions | grep '3\.6\.5'; then
+	pyenv global 3.6.5
 else
-	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.0 && pyenv global 3.6.0
+	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.5 && pyenv global 3.6.5
 fi
 
 set +x; source ~/.bashrc; set -x
@@ -120,17 +126,13 @@ nvim +PluginInstall +GoInstallBinaries +qall && \
 
 # From https://docs.docker.com/engine/installation/linux/debian/
 echo "===== Docker ====="
-compose_version=$(curl -sL "https://github.com/docker/compose/tags" | grep tag-name | grep --only '>[0-9\.]\+<' | head -n1 | cut -c 2- | rev | cut -c 2- | rev)
-sudo apt-get install -y apt-transport-https ca-certificates gnupg2 && \
-sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
-echo "deb https://apt.dockerproject.org/repo debian-jessie main" | sudo tee /etc/apt/sources.list.d/docker.list && \
-
-sudo apt-get update && \
-sudo apt-get install -y docker-engine && \
-sudo groupadd docker && \
+sudo apt install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
+sudo apt update && \
+sudo apt install -y docker-ce && \
 sudo gpasswd -a ${USER} docker && \
 
-sudo curl -L "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -sL "https://github.com/docker/compose/tags" | grep tag-name | grep --only '>[0-9\.]\+<' | head -n1 | cut -c 2- | rev | cut -c 2- | rev)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
 sudo chmod a+x /usr/local/bin/docker-compose
 
 touch ~/.dotfiles_initialized
