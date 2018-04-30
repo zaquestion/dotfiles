@@ -2,7 +2,7 @@
 export projects=~/projects
 export GOPATH=$projects/go
 export GOROOT=/usr/local/go
-export PATH=~/bin:$GOPATH/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
+export PATH=~/scripts/:~/bin:$GOPATH/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
 export EDITOR=$(which vim)
 
 eval `keychain --eval --agents ssh id_rsa id_rsa_zaq`

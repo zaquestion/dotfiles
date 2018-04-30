@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# x_focsued_dir returns the working directory of the currently focus tmux session or x window
+
+PID=$(xprop -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}') | awk '/_NET_WM_PID\(CARDINAL\)/{print $NF}')
+fPID=${PID}
+
+# For something like: while true; do DEBUG=13 x_focused_dir; sleep .5; done
+if [[ "$DEBUG" != "" ]]; then
+	trap "{
+		echo $fPID > /tmp/lastfpid
+	}" EXIT
+
+
+	if [[ "$(cat /tmp/lastfpid)" == "$fPID" ]]; then
+		exit 0
+	fi
+	echo "Focused PID: $fPID"
+fi
+
+# traverse to leaf process
+while [[ $PID != "" ]]; do
+	lPID=${PID}
+	PID=$(ps -o pid= --ppid $PID | head -1)
+done
+
+
+PCP=$(tmux list-clients -F '#{client_pid} #{pane_current_path}' | awk -v d="${HOME}" -v pid="^${lPID}$" '$1 ~ pid { d=$2 } END {print d}')
+
+logf=/tmp/tmuxcwd.log
+if [[ "$DEBUG" != "" ]]; then
+	logf=/dev/fd/1
+fi
+
+cat <<- EOF | column -t -s, >> $logf
+DATETIME,fPID,lPID,PID,Path
+$(date),${fPID},${lPID},$$,${PCP}
+EOF
+
+echo ${PCP}

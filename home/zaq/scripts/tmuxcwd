@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# tmuxcwd opens a new tmux session with the working directory of the active pane
+# on currently focused x window
+
+trap '{ tmux kill-session -t $$ 2>> /tmp/tmuxcwd-killsession.log; }' EXIT
+st -e tmux new -c $(x_focused_dir) -s "$$"
