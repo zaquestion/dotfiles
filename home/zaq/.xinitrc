@@ -1,10 +1,9 @@
 xset r rate 200 100
 xrdb -merge ~/.Xresources
-sleep 2 && chromium &
+sleep 2 && google-chrome &
 sleep 2 && slack &
-sleep 2 && st -n mat -e tmux new-session -c /home/zaq/projects/go/src/gitlab.corp.tune.com/engineering/measurement &
-sleep 2 && st -n leg -e tmux new-session -c /home/zaq/projects/php/tracking_engine &
-sleep 2 && st -n qa -e tmux new-session -c /home/zaq/projects/python/tracking_qa &
+sleep 2 && st -n lab -e tmux new-session -c /home/zaq/projects/go/src/github.com/zaquestion/lab &
+sleep 2 && st -n labtest -e tmux new-session -c /home/zaq/projects/go/src/github.com/zaquestion/testdata/test &
 
 xautolock -time 5 -locker slock &
 $GOPATH/bin/gods &
