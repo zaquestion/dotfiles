@@ -97,6 +97,9 @@ shopt -s cmdhist
 shopt -s histappend
 shopt -s globstar
 
+# expand environment vars to there full path for tab complete
+shopt -s direxpand
+
 # Once a i-search fails allows you to modify the search and keep searching (readline)
 shopt -s histreedit
 
