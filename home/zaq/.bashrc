@@ -62,23 +62,23 @@ alias xclip="xclip -selection clipboard"
 # Terminal Settings
 export TERM="xterm-256color"
 
-git_prompt ()
+git_branch()
 {
-	if ! git rev-parse --git-dir > /dev/null 2>&1; then
+	if ! $(which git) rev-parse --git-dir > /dev/null 2>&1; then
 		return 0
 	fi
 
-	git_branch=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
-
-	if git diff --quiet 2>/dev/null >&2; then
-		git_color="${c_git_clean}"
-	else
-		git_color=${c_git_cleanit_dirty}
-	fi
-
-	echo "($git_color$git_branch${c_reset})"
+	echo $($(which git) branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
 }
 
+git_prompt ()
+{
+	if ! $(which git) rev-parse --git-dir > /dev/null 2>&1; then
+		return 0
+	fi
+
+	echo "($(git_branch))"
+}
 # export all these for subshells
 export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
@@ -89,7 +89,7 @@ HISTFILESIZE=-1
 
 # Avoid duplicates
 export HISTCONTROL=erasedups:ignoredups
-export PROMPT_COMMAND="history -a;"
+export PROMPT_COMMAND="history -a;export GIT_BRANCH=\$(git_branch)"
 # prevents reused lines from being commited
 set revert-all-at-newline on
 # When the shell exits, append to the history file instead of overwriting it

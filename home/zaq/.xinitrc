@@ -1,5 +1,4 @@
 xset r rate 200 100
-xrdb -merge ~/.Xresources
 sleep 2 && google-chrome &
 sleep 2 && slack &
 sleep 2 && st -n lab -e tmux new-session -c /home/zaq/projects/go/src/github.com/zaquestion/lab &
