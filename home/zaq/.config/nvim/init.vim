@@ -138,3 +138,21 @@ let g:formatdef_yapf = "'yapf --style=\"{based_on_style: pep8, indent_width: 4, 
 let @s  = '^/self\.dwdwicfg["lguwwi"]'
 
 let g:fugitive_gitlab_domains = ['https://gitlab.corp.tune.com']
+
+" define a fancy nvim clipboard provider
+let g:clipboard = {
+  \   'name': 'Vim Clipboard',
+  \   'copy': {
+  \      '+': 'xclip -i -selection clipboard',
+  \      '*': 'xclip -i -selection secondary',
+  \    },
+  \   'paste': {
+  \      '+': 'xclip -o -selection clipboard',
+  \      '*': 'xclip -o -selection secondary',
+  \   },
+  \   'cache_enabled': 1,
+  \ }
+" tell nvim to use * as its internal clipboard
+" now vim sessions can share yank buffers by using the virtually unheard of
+" secondary selection buffer!
+set clipboard=unnamed
