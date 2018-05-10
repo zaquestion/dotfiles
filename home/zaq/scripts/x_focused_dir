@@ -1,39 +1,50 @@
 #!/usr/bin/env bash
-# x_focsued_dir returns the working directory of the currently focus tmux session or x window
+# x_focused_dir returns the working directory of the currently focus tmux session or x window
 
 PID=$(xprop -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}') | awk '/_NET_WM_PID\(CARDINAL\)/{print $NF}')
 fPID=${PID}
 
 # For something like: while true; do DEBUG=13 x_focused_dir; sleep .5; done
-if [[ "$DEBUG" != "" ]]; then
+if [[ "${DEBUG}" != "" ]]; then
 	trap "{
-		echo $fPID > /tmp/lastfpid
+		echo ${fPID} > /tmp/lastfpid
 	}" EXIT
 
 
-	if [[ "$(cat /tmp/lastfpid)" == "$fPID" ]]; then
+	if [[ "$(cat /tmp/lastfpid)" == "${fPID}" ]]; then
 		exit 0
 	fi
-	echo "Focused PID: $fPID"
+	echo "Focused PID: ${fPID}"
 fi
 
 # traverse to leaf process
-while [[ $PID != "" ]]; do
+while [[ ${PID} != "" ]]; do
 	lPID=${PID}
-	PID=$(ps -o pid= --ppid $PID | head -1)
+	PID=$(ps -o pid= --ppid ${PID} | head -1 | tr -d '[:space:]')
+	# If the pid doesn't still exist, we found the above subprocess pid.
+	# This will force ${PID} = "" and ${lPID} will maintain the correct leaf
+	PID=$(ps -o pid= -p ${PID} | tr -d '[:space:]')
 done
 
+lDir=$(readlink -e /proc/${lPID}/cwd)
+if [[ "${lDir}" == "" ]]; then
+	lDir=${HOME}
+fi
 
-PCP=$(tmux list-clients -F '#{client_pid} #{pane_current_path}' | awk -v d="${HOME}" -v pid="^${lPID}$" '$1 ~ pid { d=$2 } END {print d}')
+PCP=$(tmux list-clients -F '#{client_pid} #{pane_current_path}' | awk -v d="${lDir}" -v pid="^${lPID}$" '$1 ~ pid { d=$2 } END {print d}')
 
-logf=/tmp/tmuxcwd.log
-if [[ "$DEBUG" != "" ]]; then
+logf=/tmp/x_focused_dir.log
+if [[ "${DEBUG}" != "" ]]; then
 	logf=/dev/fd/1
 fi
 
-cat <<- EOF | column -t -s, >> $logf
-DATETIME,fPID,lPID,PID,Path
-$(date),${fPID},${lPID},$$,${PCP}
+cat <<- EOF | column -t -s, >> ${logf}
+DATETIME,PID,fPID,lPID,lDir,CWD
+$(date),$$,${fPID},${lPID},${lDir},${PCP}
 EOF
+if [ -x "$(command -v pstree)" ]; then
+	pstree -p ${fPID} >> ${logf}
+fi
+echo >> ${logf}
 
 echo ${PCP}
