@@ -2,7 +2,7 @@ set nocompatible              " be iMproved, required
 filetype off                  " required
 
 " set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
+set rtp+=~/.config/nvim/bundle/Vundle.vim
 call vundle#begin()
 
 " let Vundle manage Vundle, required
@@ -96,7 +96,11 @@ set wildmenu
 
 " Do highlighting on search and macro do clear search
 set hlsearch
-nnoremap <leader><CR> :noh
+nnoremap <leader><CR> :noh<CR>
+
+" indentation
+set shiftwidth=4
+set expandtab
 
 set pastetoggle=<F2>
 
@@ -116,7 +120,7 @@ nnoremap <leader>e :e <C-R>=expand("%:p:h") . "/" <CR>
 nnoremap <leader>E :Explore<CR>
 " re-executes the last command
 nnoremap <leader><leader> @:
-nnoremap <leader>ft :exec 'sp ~/.vim/ftplugin/' . &filetype . '.vim' <CR>
+nnoremap <leader>ft :exec 'sp ~/.config/nvim/ftplugin/' . &filetype . '.vim' <CR>
 
 set tags=$projects/tags
 nmap <F8> :TagbarToggle<CR>

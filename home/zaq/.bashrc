@@ -24,9 +24,6 @@ if [ ! -r ~/.docker-compose-completion.bash ]; then
 fi
 source ~/.docker-compose-completion.bash
 
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-
 xset r rate 200 100
 # "Application" Alias
 if which nvim; then
@@ -51,6 +48,7 @@ fi
 
 
 # User Variables
+export tune=$GOPATH/src/github.com/tuneinc
 export zaq=$GOPATH/src/github.com/zaquestion
 export lab=$GOPATH/src/github.com/TuneLab
 export pylab=$projects/python/TuneLab/
@@ -83,6 +81,8 @@ git_prompt ()
 export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
+
+############### HISTORY SECTION ####################
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=-1
 HISTFILESIZE=-1
@@ -92,22 +92,26 @@ export HISTCONTROL=erasedups:ignoredups
 export PROMPT_COMMAND="history -a;export GIT_BRANCH=\$(git_branch)"
 # prevents reused lines from being commited
 set revert-all-at-newline on
-# When the shell exits, append to the history file instead of overwriting it
+# Attempt to combine multiline commands into 1 history line with semicolons
 shopt -s cmdhist
+# When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
-shopt -s globstar
-
-# expand environment vars to there full path for tab complete
-shopt -s direxpand
-
 # Once a i-search fails allows you to modify the search and keep searching (readline)
 shopt -s histreedit
-
 # Prevent C-s from sent XOF (pause)
 # Allows C-s to be used in i-search
 stty -ixon
+############### HISTORY SECTION ####################
+
+# Modifies PROMPT_COMMAND
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+# expand environment vars to there full path for tab complete
+shopt -s direxpand
+# badass globbing
+shopt -s globstar
 
 # Disables caps lock key
 # reset: setxkbmap -option
 setxkbmap -option ctrl:nocaps
-
