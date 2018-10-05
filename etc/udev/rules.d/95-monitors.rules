@@ -1,0 +1,1 @@
+ACTION=="change", RUN+="/home/zaq/scripts/disp-auto"
