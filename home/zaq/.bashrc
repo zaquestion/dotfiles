@@ -5,7 +5,7 @@ export GOROOT=/usr/local/go
 export PATH=~/scripts/:~/bin:$GOPATH/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
 export EDITOR=$(which vim)
 
-eval `keychain --eval --agents ssh id_rsa id_rsa_zaq`
+eval "$(keychain --eval --agents ssh id_rsa)"
 
 # Source external
 if [ ! -r ~/.git-completion.bash ]; then
@@ -13,11 +13,6 @@ if [ ! -r ~/.git-completion.bash ]; then
 	curl -s 'https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash' > ~/.git-completion.bash
 fi
 source ~/.git-completion.bash
-if [ ! -r ~/.aws-completion.bash ]; then
-	echo "downloading .aws-completion.bash"
-	curl -s 'https://raw.githubusercontent.com/aws/aws-cli/master/bin/aws_completer' > ~/.aws-completion.bash
-fi
-complete -C '~/.aws-completion.bash' aws
 
 if [ ! -r ~/.docker-compose-completion.bash ]; then
 	curl -sL "https://raw.githubusercontent.com/docker/compose/$(docker-compose version --short)/contrib/completion/bash/docker-compose" > ~/.docker-compose-completion.bash
@@ -40,6 +35,7 @@ if which hub; then
 fi
 if which lab; then
 	alias git=lab
+        source <(lab completion bash)
 fi
 
 if [ ! -x ~/.bashrc.local ]; then
@@ -48,10 +44,7 @@ fi
 
 
 # User Variables
-export tune=$GOPATH/src/github.com/tuneinc
 export zaq=$GOPATH/src/github.com/zaquestion
-export lab=$GOPATH/src/github.com/TuneLab
-export pylab=$projects/python/TuneLab/
 
 # User Alias
 alias ag="ag --ignore-dir vendor"
@@ -81,19 +74,28 @@ git_prompt ()
 export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
+pre_prompt_command() {
+    version="1.0.0"
+    entity=$(echo $(fc -ln -0) | cut -d ' ' -f1)
+    [ -z "$entity" ] && return # $entity is empty or only whitespace
+    $(which git) status &> /dev/null && local project="$(basename $($(which git) rev-parse --show-toplevel))" || local project="Terminal"
+    (wakatime --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 > /dev/null &)
+}
+
 
 ############### HISTORY SECTION ####################
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=-1
-HISTFILESIZE=-1
+export HISTSIZE=-1
+export HISTFILESIZE=-1
 
 # Avoid duplicates
 export HISTCONTROL=erasedups:ignoredups
-export PROMPT_COMMAND="history -a;export GIT_BRANCH=\$(git_branch)"
+export PROMPT_COMMAND="pre_prompt_command; history -a;export GIT_BRANCH=\$(git_branch)"
 # prevents reused lines from being commited
 set revert-all-at-newline on
 # Attempt to combine multiline commands into 1 history line with semicolons
 shopt -s cmdhist
+shopt -u lithist
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
 # Once a i-search fails allows you to modify the search and keep searching (readline)

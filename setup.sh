@@ -116,13 +116,15 @@ else
 fi
 
 set +x; source ~/.bashrc; set -x
-pip install neovim seqdiag yapf awscli
+pip install pynvim seqdiag yapf awscli
 
 # Config Applications
 echo "===== nvim Environment ====="
-test ! -d ~/.vim/bundle/Vundle.vim && git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim && \
-nvim +PluginInstall +GoInstallBinaries +qall && \
-(cd ~/.vim/bundle/YouCompleteMe && ./install.py --clang-completer --gocode-completer)
+curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+(cd /tmp && git clone https://github.com/saibing/bingo.git \ &&
+    cd bingo && GO111MODULE=on go install)
+nvim +PlugInstall +UpdateRemotePlugins +GoInstallBinaries +qall
 
 # From https://docs.docker.com/engine/installation/linux/debian/
 echo "===== Docker ====="

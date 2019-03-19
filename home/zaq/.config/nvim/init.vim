@@ -1,43 +1,49 @@
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.config/nvim/bundle/Vundle.vim
-call vundle#begin()
+call plug#begin('~/.local/share/nvim/plugged')
 
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
+Plug 'ncm2/ncm2'
+Plug 'roxma/nvim-yarp'
 
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'sirver/ultisnips'
-Plugin 'honza/vim-snippets'
+Plug 'ncm2/ncm2-bufword'
+Plug 'ncm2/ncm2-tmux'
+Plug 'ncm2/ncm2-path'
 
-Plugin 'fatih/vim-go'
+Plug 'ncm2/ncm2-jedi'
+"Plug 'ncm2/ncm2-go'
 
-Plugin 'majutsushi/tagbar'
-Plugin 'mileszs/ack.vim'
+Plug 'autozimu/LanguageClient-neovim', {
+  \ 'branch': 'next',
+  \ 'do': 'bash install.sh',
+  \ }
 
-Plugin 'zaquestion/vim-monokai'
-Plugin 'tmhedberg/SimpylFold'
+Plug 'ncm2/ncm2-ultisnips'
+Plug 'sirver/ultisnips'
 
-Plugin 'tpope/vim-fugitive'
-Plugin 'shumphrey/fugitive-gitlab.vim'
+Plug 'majutsushi/tagbar'
+Plug 'mileszs/ack.vim'
 
-Plugin 'scrooloose/syntastic'
-Plugin 'Chiel92/vim-autoformat'
-Plugin 'godlygeek/tabular'
+Plug 'zaquestion/vim-monokai'
+Plug 'tmhedberg/SimpylFold'
 
-" PHP
-" $ sudo apt install phpmd php-codesniffer
-" ctags.io
-Plugin 'shawncplus/phpcomplete.vim'
-Plugin 'StanAngeloff/php.vim'
-Plugin 'joonty/vdebug'
+Plug 'tpope/vim-fugitive'
+Plug 'shumphrey/fugitive-gitlab.vim'
+Plug 'tpope/vim-rhubarb'
+
+Plug 'scrooloose/syntastic'
+Plug 'Chiel92/vim-autoformat'
+Plug 'godlygeek/tabular'
 
 " Graphviz Dot
-Plugin 'wannesm/wmgraphviz.vim'
+Plug 'wannesm/wmgraphviz.vim'
 
-call vundle#end()
+" Time Tracking
+Plug 'wakatime/vim-wakatime'
+
+Plug 'fatih/vim-go'
+
+call plug#end()
 
 set timeoutlen=1000 ttimeoutlen=10
 
@@ -141,7 +147,7 @@ let g:formatdef_yapf = "'yapf --style=\"{based_on_style: pep8, indent_width: 4, 
 
 let @s  = '^/self\.dwdwicfg["lguwwi"]'
 
-let g:fugitive_gitlab_domains = ['https://gitlab.corp.tune.com']
+let g:fugitive_gitlab_domains = ['https://gitlab.com']
 
 " define a fancy nvim clipboard provider
 let g:clipboard = {
@@ -160,3 +166,64 @@ let g:clipboard = {
 " now vim sessions can share yank buffers by using the virtually unheard of
 " secondary selection buffer!
 set clipboard=unnamed
+
+autocmd BufEnter  *  call ncm2#enable_for_buffer()
+" Affects the visual representation of what happens after you hit <C-x><C-o>
+" https://neovim.io/doc/user/insert.html#i_CTRL-X_CTRL-O
+" https://neovim.io/doc/user/options.html#'completeopt'
+"
+" This will show the popup menu even if there's only one match (menuone),
+" prevent automatic selection (noselect) and prevent automatic text injection
+" into the current line (noinsert).
+set completeopt=noinsert,menuone,noselect
+
+" suppress the annoying 'match x of y', 'The only match' and 'Pattern not
+" found' messages
+set shortmess+=c
+
+" CTRL-C doesn't trigger the InsertLeave autocmd . map to <ESC> instead.
+inoremap <c-c> <ESC>
+
+" When the <Enter> key is pressed while the popup menu is visible, it only
+" hides the menu. Use this mapping to close the menu and also start a new
+" line.
+inoremap <expr> <CR> (pumvisible() ? "\<c-y>\<cr>" : "\<CR>")
+
+" Use <TAB> to select the popup menu:
+inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+let g:go_def_mapping_enabled = 0
+nnoremap <c-]> :call LanguageClient#textDocument_definition()<CR>
+
+" wrap existing omnifunc
+" Note that omnifunc does not run in background and may probably block the
+" editor. If you don't want to be blocked by omnifunc too often, you could
+" add 180ms delay before the omni wrapper:
+"  'on_complete': ['ncm2#on_complete#delay', 180,
+"               \ 'ncm2#on_complete#omni', 'csscomplete#CompleteCSS'],
+"au User Ncm2Plugin call ncm2#register_source({
+"    \ 'name' : 'css',
+"    \ 'priority': 9,
+"    \ 'subscope_enable': 1,
+"    \ 'scope': ['css','scss'],
+"    \ 'mark': 'css',
+"    \ 'word_pattern': '[\w\-]+',
+"    \ 'complete_pattern': ':\s*',
+"    \ 'on_complete': ['ncm2#on_complete#omni', 'csscomplete#CompleteCSS'],
+"    \ })
+
+" 'go': ['.git', 'go.mod'],
+let g:LanguageClient_rootMarkers = {
+        \ 'go': ['.git', 'go.mod'],
+        \ }
+let g:LanguageClient_loggingFile = '/tmp/lc.log'
+let g:LanguageClient_loggingLevel = 'DEBUG'
+
+" 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet'],
+" 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet', '-enhance-signature-help'],
+" 'go': ['tcp://127.0.0.1:4389'],
+" 'go': ['forward', '-port=4389'],
+let g:LanguageClient_serverCommands = {
+    \ 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet', '-enhance-signature-help'],
+    \ }

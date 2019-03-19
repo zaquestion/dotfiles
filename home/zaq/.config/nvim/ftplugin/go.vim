@@ -9,3 +9,5 @@ nnoremap <leader>p :GoChannelPeers<CR>
 nnoremap <leader>m :GoImplements<CR>
 nnoremap <leader>i :GoInfo<CR>
 nnoremap <leader>d :GoDoc<CR>
+
+set shiftwidth=8

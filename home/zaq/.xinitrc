@@ -6,4 +6,5 @@ sleep 2 && st -n labtest -e tmux new-session -c /home/zaq/projects/go/src/github
 
 xautolock -time 5 -locker slock &
 $GOPATH/bin/gods &
+xrandr --output eDP-1 --scale 0.5x0.5
 exec dwm
