@@ -39,8 +39,6 @@ Plug 'godlygeek/tabular'
 Plug 'wannesm/wmgraphviz.vim'
 
 " Time Tracking
-Plug 'wakatime/vim-wakatime'
-
 Plug 'fatih/vim-go'
 
 call plug#end()

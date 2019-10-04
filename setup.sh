@@ -33,6 +33,7 @@ mkdir -p ~/projects/go
 mkdir -p ~/projects/go/src
 mkdir -p ~/projects/go/pkg
 mkdir -p ~/projects/go/bin
+mkdir -p ~/projects/go-mod/src
 mkdir -p ~/projects/python
 
 echo "===== Replicating Folder Structure ====="
@@ -60,7 +61,7 @@ set +x; source ~/.bashrc; set -x
 
 echo '===== "system" packages ====='
 sudo apt update
-sudo apt install -y neovim tmux keychain xclip scrot graphviz keynav curl xinit
+sudo apt install -y neovim tmux keychain xclip scrot graphviz keynav curl xinit jq ripgrep
 sudo apt install -y x11-xserver-utils
 sudo apt install -y build-essential cmake libxinerama-dev
 
@@ -109,10 +110,10 @@ echo "===== Python Environment ====="
 sudo apt install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
 sudo apt install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
 
-if pyenv versions | grep '3\.6\.5'; then
-	pyenv global 3.6.5
+if pyenv versions | grep '3\.7\.4'; then
+	pyenv global 3.7.4
 else
-	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.5 && pyenv global 3.6.5
+	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.7.4 && pyenv global 3.7.4
 fi
 
 set +x; source ~/.bashrc; set -x
@@ -122,19 +123,18 @@ pip install pynvim seqdiag yapf awscli
 echo "===== nvim Environment ====="
 curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-(cd /tmp && git clone https://github.com/saibing/bingo.git \ &&
-    cd bingo && GO111MODULE=on go install)
 nvim +PlugInstall +UpdateRemotePlugins +GoInstallBinaries +qall
 
 # From https://docs.docker.com/engine/installation/linux/debian/
 echo "===== Docker ====="
 sudo apt install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
 curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
 sudo apt update && \
 sudo apt install -y docker-ce && \
 sudo gpasswd -a ${USER} docker && \
 
-sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -sL "https://github.com/docker/compose/tags" | grep tag-name | grep --only '>[0-9\.]\+<' | head -n1 | cut -c 2- | rev | cut -c 2- | rev)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -sL "https://api.github.com/repos/docker/compose/releases/latest" | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
 sudo chmod a+x /usr/local/bin/docker-compose
 
 touch ~/.dotfiles_initialized

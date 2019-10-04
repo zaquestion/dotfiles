@@ -74,15 +74,6 @@ git_prompt ()
 export -f git_prompt
 export PS1="\u@\h:\w \[\033[m\]\$(git_prompt)\n\$ "
 
-pre_prompt_command() {
-    version="1.0.0"
-    entity=$(echo $(fc -ln -0) | cut -d ' ' -f1)
-    [ -z "$entity" ] && return # $entity is empty or only whitespace
-    $(which git) status &> /dev/null && local project="$(basename $($(which git) rev-parse --show-toplevel))" || local project="Terminal"
-    (wakatime --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 > /dev/null &)
-}
-
-
 ############### HISTORY SECTION ####################
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 export HISTSIZE=-1
@@ -90,7 +81,7 @@ export HISTFILESIZE=-1
 
 # Avoid duplicates
 export HISTCONTROL=erasedups:ignoredups
-export PROMPT_COMMAND="pre_prompt_command; history -a;export GIT_BRANCH=\$(git_branch)"
+export PROMPT_COMMAND="history -a"
 # prevents reused lines from being commited
 set revert-all-at-newline on
 # Attempt to combine multiline commands into 1 history line with semicolons
