@@ -68,12 +68,19 @@ sudo apt install -y build-essential cmake libxinerama-dev
 # Get Applications
 if ! [ -x "$(command -v go)" ]; then
 	set +x; echo "===== Downloading latest GoLang ====="; set -x
-	curl -L $(curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4) | sudo tar -C /usr/local/ -xzf -
+	curl -L "https://golang.org/dl$(curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4)" | sudo tar -C /usr/local/ -xzf -
 fi
 
 if ! [ -x "$(command -v hub)" ]; then
 	set +x; echo "===== Getting hub ====="; set -x
 	go get github.com/github/hub
+fi
+
+if ! [ -x "$(command -v gh)" ]; then
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+    sudo apt-add-repository https://cli.github.com/packages
+    sudo apt update
+    sudo apt install gh
 fi
 
 if ! [ -x "$(command -v lab)" ]; then
@@ -102,6 +109,9 @@ if ! [ -x "$(command -v st)" ]; then
 	git clone git://git.suckless.org/st ~/projects/c/st
 	cp ~/suckless/st/* ~/projects/c/st/
 	(cd ~/projects/c/st && sudo make install)
+fi
+if ! [ -x "$(command -v gopls)" ]; then
+    GO111MODULE=on go get golang.org/x/tools/gopls@latest
 fi
 
 

@@ -38,8 +38,8 @@ Plug 'godlygeek/tabular'
 " Graphviz Dot
 Plug 'wannesm/wmgraphviz.vim'
 
-" Time Tracking
 Plug 'fatih/vim-go'
+Plug 'sebdah/vim-delve'
 
 call plug#end()
 
@@ -151,7 +151,7 @@ let g:fugitive_gitlab_domains = ['https://gitlab.com']
 let g:clipboard = {
   \   'name': 'Vim Clipboard',
   \   'copy': {
-  \      '+': 'xclip -i -selection clipboard',
+  \      '+': 'multixclip',
   \      '*': 'xclip -i -selection secondary',
   \    },
   \   'paste': {
@@ -191,8 +191,11 @@ inoremap <expr> <CR> (pumvisible() ? "\<c-y>\<cr>" : "\<CR>")
 inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 
-let g:go_def_mapping_enabled = 0
-nnoremap <c-]> :call LanguageClient#textDocument_definition()<CR>
+"let g:go_def_mapping_enabled = 0
+"nnoremap <c-]> :call LanguageClient#textDocument_definition()<CR>
+
+let g:go_def_mode='gopls'
+let g:go_info_mode='gopls'
 
 " wrap existing omnifunc
 " Note that omnifunc does not run in background and may probably block the
@@ -215,13 +218,11 @@ nnoremap <c-]> :call LanguageClient#textDocument_definition()<CR>
 let g:LanguageClient_rootMarkers = {
         \ 'go': ['.git', 'go.mod'],
         \ }
-let g:LanguageClient_loggingFile = '/tmp/lc.log'
-let g:LanguageClient_loggingLevel = 'DEBUG'
 
 " 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet'],
 " 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet', '-enhance-signature-help'],
 " 'go': ['tcp://127.0.0.1:4389'],
 " 'go': ['forward', '-port=4389'],
 let g:LanguageClient_serverCommands = {
-    \ 'go': ['bingo', '-format-style', 'gofmt', '-disable-func-snippet', '-enhance-signature-help'],
+    \ 'go': ['gopls']
     \ }

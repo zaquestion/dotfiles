@@ -1,8 +1,9 @@
 # "Application" Variables
 export projects=~/projects
 export GOPATH=$projects/go
+export GOBIN=$projects/go/bin
 export GOROOT=/usr/local/go
-export PATH=~/scripts/:~/bin:$GOPATH/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
+export PATH=~/scripts/:~/bin:$GOPATH/bin:/snap/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
 export EDITOR=$(which vim)
 
 eval "$(keychain --eval --agents ssh id_rsa)"
@@ -32,6 +33,9 @@ if which hub; then
 		curl -s 'https://raw.githubusercontent.com/github/hub/master/etc/hub.bash_completion.sh' > ~/.hub-completion.bash
 	fi
 	source ~/.hub-completion.bash
+fi
+if which gh; then
+        source <(gh completion -s bash)
 fi
 if which lab; then
 	alias git=lab
@@ -80,7 +84,7 @@ export HISTSIZE=-1
 export HISTFILESIZE=-1
 
 # Avoid duplicates
-export HISTCONTROL=erasedups:ignoredups
+export HISTCONTROL=erasedups:ignoredups:ignorespace
 export PROMPT_COMMAND="history -a"
 # prevents reused lines from being commited
 set revert-all-at-newline on
@@ -94,6 +98,13 @@ shopt -s histreedit
 # Prevent C-s from sent XOF (pause)
 # Allows C-s to be used in i-search
 stty -ixon
+
+## Bash up arrow search completion
+## http://askubuntu.com/questions/59846/bash-history-search-partial-up-arrow
+## arrow up search through history
+bind '"\e[A":history-search-backward'
+## arrow down
+bind '"\e[B":history-search-forward'
 ############### HISTORY SECTION ####################
 
 # Modifies PROMPT_COMMAND
