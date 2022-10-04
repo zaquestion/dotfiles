@@ -23,6 +23,7 @@ Plug 'sirver/ultisnips'
 
 Plug 'majutsushi/tagbar'
 Plug 'mileszs/ack.vim'
+Plug 'jremmen/vim-ripgrep'
 
 Plug 'zaquestion/vim-monokai'
 Plug 'tmhedberg/SimpylFold'
@@ -34,12 +35,18 @@ Plug 'tpope/vim-rhubarb'
 Plug 'scrooloose/syntastic'
 Plug 'Chiel92/vim-autoformat'
 Plug 'godlygeek/tabular'
+Plug 'Yggdroot/indentLine'
 
 " Graphviz Dot
 Plug 'wannesm/wmgraphviz.vim'
 
 Plug 'fatih/vim-go'
 Plug 'sebdah/vim-delve'
+
+" ruby/rails shenanigans
+Plug 'tpope/vim-rails'
+
+Plug 'google/vim-jsonnet'
 
 call plug#end()
 
@@ -65,7 +72,8 @@ cnoreabbrev ag Ack
 cnoreabbrev Ag Ack
 
 "noremap <C-\> :exec 'Ack!' expand('<cword>') getcwd()<CR>
-noremap <C-\> :exec 'Ack!' '"'.matchstr(getline("."), expand('<cword>').'(\?').'"' getcwd()<CR>
+"noremap <C-\> :exec 'Ack!' '"'.matchstr(getline("."), expand('<cword>').'(\?').'"' getcwd()<CR>
+noremap <C-\> :exec 'Rg'<CR>
 
 "remove trailing whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
@@ -224,5 +232,14 @@ let g:LanguageClient_rootMarkers = {
 " 'go': ['tcp://127.0.0.1:4389'],
 " 'go': ['forward', '-port=4389'],
 let g:LanguageClient_serverCommands = {
-    \ 'go': ['gopls']
+    \ 'go': {
+    \   'name': 'gopls',
+    \   'command': ['gopls'],
+    \   'initializationOptions': {
+    \     'usePlaceholders': v:true,
+    \     'buildFlags': ["-tags=or_test,or_dev,or_e2e,or_int"],
+    \   },
+    \ },
+    \ 'ruby': ['solargraph', 'stdio'],
+    \ 'typescript': ['typescript-language-server', '--stdio']
     \ }
