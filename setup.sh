@@ -88,12 +88,6 @@ if ! [ -x "$(command -v lab)" ]; then
 	curl -s https://raw.githubusercontent.com/zaquestion/lab/master/install.sh | bash
 fi
 
-if ! [ -x "$(command -v pyenv)" ]; then
-	set +x; echo "===== Installing pyenv ====="; set -x
-	curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-	set +x; source ~/.bashrc; set -x
-fi
-
 if ! [ -x "$(command -v dwm)" ]; then
 	set +x; echo "===== Compiling dwm ====="; set -x
 	go get github.com/zaquestion/gods
@@ -114,17 +108,10 @@ if ! [ -x "$(command -v gopls)" ]; then
     GO111MODULE=on go get golang.org/x/tools/gopls@latest
 fi
 
-
 # Python Stuff
 echo "===== Python Environment ====="
 sudo apt install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
 sudo apt install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
-
-if pyenv versions | grep '3\.7\.4'; then
-	pyenv global 3.7.4
-else
-	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.7.4 && pyenv global 3.7.4
-fi
 
 set +x; source ~/.bashrc; set -x
 pip install pynvim seqdiag yapf awscli
