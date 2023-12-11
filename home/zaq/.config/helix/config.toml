@@ -11,6 +11,10 @@ display-inlay-hints = true
 [keys.normal]
 x = ["goto_line_start", "select_mode", "goto_line_end_newline"]
 X = ["goto_line_start", "select_mode", "goto_line_end_newline"]
+C-j = "jump_view_down"
+C-k = "jump_view_up"
+C-l = "jump_view_right"
+C-h = "jump_view_left"
 
 [keys.normal.space]
 t = ":toggle-option lsp.display-inlay-hints"
