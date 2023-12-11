@@ -4,31 +4,41 @@
 # for use, so we will use the `at` command to run our command again as
 # another user:
 if [ "$1" != "forked" ]; then
+    sleep .1
     echo "$(dirname $0)/$(basename $0) forked" | at now
     exit
 fi
 
 # udev runs as root, so we need to tell it how to connect to the X server:
-export DISPLAY=:0
-export XAUTHORITY=/home/zaq/.Xauthority
+export DISPLAY=:1
+export XAUTHORITY=/run/user/1000/gdm/Xauthority
 
 # Find out the device path to our graphics card:
 cardPath=/sys/$(udevadm info -q path -n /dev/dri/card1)
 
 # Detect if the monitor is connected and, if so, the monitor's ID:
-conHdmi=$(xrandr | grep '^DP-[12] connected')
-shaHdmi1=$(sha1sum $cardPath/card1-DP-1/edid | cut -f1 -d " ")
-shaHdmi2=$(sha1sum $cardPath/card1-DP-2/edid | cut -f1 -d " ")
+conHdmi=$(xrandr | grep '^\(HDMI\|DP\)-[012] connected')
+shaHdmi1=$(sha1sum <(python3 /home/zaq/scripts/get-edid.py DP-0) | cut -f1 -d " ")
+shaHdmi2=$(sha1sum <(python3 /home/zaq/scripts/get-edid.py DP-1) | cut -f1 -d " ")
 
 # The useful part: check what the connection status is, and run some other commands
 if [ -n "$conHdmi" ]; then
-    if [ "$shaHdmi1" = "e6f792f461e9e9f3ca5917f52044806f8de36f57" ]; then
-        xrandr --output eDP-1 --auto --output DP-1 --auto --primary --left-of eDP-1
-    elif ["$shaHdmi2" = "e6f792f461e9e9f3ca5917f52044806f8de36f57" ]; then    # Office PC
-        xrandr --output eDP-1 --auto --output DP-2 --auto --primary --left-of eDP-1
+    if [ "$shaHdmi1" = "2702ea47807c792f7b0e91463c622916c7d697a4" ]; then # home monitor left front usbc
+        xrandr --output eDP-1-1 --auto --output DP-0 --auto --primary --left-of eDP-1-1
+    elif [ "$shaHdmi2" = "2702ea47807c792f7b0e91463c622916c7d697a4" ]; then # home monitor left back usbc
+        xrandr --output eDP-1-1 --auto --output DP-1 --auto --primary --left-of eDP-1-1
+    elif [ "$shaHdmi1" = "ba4f493755361196fbb8222f1aae116833614c67" ]; then # home monitor left front usbc
+        xrandr --output eDP-1-1 --auto --output DP-0 --auto --primary --left-of eDP-1-1
+    elif [ "$shaHdmi2" = "ba4f493755361196fbb8222f1aae116833614c67" ]; then # home monitor left back usbc
+        xrandr --output eDP-1-1 --auto --output DP-1 --auto --primary --left-of eDP-1-1
+    elif [ "$shaHdmi1" = "55dcf6ccdf219f93424fdb96013d1cd09aea7caa" ]; then # home monitor left front usbc
+        xrandr --output eDP-1-1 --auto --output DP-0 --auto --primary --left-of eDP-1-1
+    elif [ "$shaHdmi2" = "55dcf6ccdf219f93424fdb96013d1cd09aea7caa" ]; then # home monitor left back usbc
+        xrandr --output eDP-1-1 --auto --output DP-1 --auto --primary --left-of eDP-1-1
+    #else                                            # Probably a projector
     #else                                            # Probably a projector
         # xrandr --output eDP-1 --auto --output DP-2 --auto --same-as eDP-1
     fi
 else
-    xrandr --output eDP-1 --auto --primary --output DP-2 --off --output DP-1 --off
+    xrandr --output eDP-1-1 --auto --primary --output DP-0 --off --output DP-1 --off
 fi

@@ -48,6 +48,19 @@ Plug 'tpope/vim-rails'
 
 Plug 'google/vim-jsonnet'
 
+Plug 'rust-lang/rust.vim'
+"use 'neovim/nvim-lspconfig'
+Plug 'simrat39/rust-tools.nvim'
+
+"-- Debugging
+Plug 'puremourning/vimspector'
+
+" ai
+Plug 'github/copilot.vim'
+
+" notes
+Plug 'vimwiki/vimwiki'
+
 call plug#end()
 
 set timeoutlen=1000 ttimeoutlen=10
@@ -204,6 +217,7 @@ inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 
 let g:go_def_mode='gopls'
 let g:go_info_mode='gopls'
+let g:go_build_tags="or_test,or_dev,or_e2e,or_int"
 
 " wrap existing omnifunc
 " Note that omnifunc does not run in background and may probably block the
@@ -221,6 +235,8 @@ let g:go_info_mode='gopls'
 "    \ 'complete_pattern': ':\s*',
 "    \ 'on_complete': ['ncm2#on_complete#omni', 'csscomplete#CompleteCSS'],
 "    \ })
+
+let g:ncm2#matcher = 'substrfuzzy'
 
 " 'go': ['.git', 'go.mod'],
 let g:LanguageClient_rootMarkers = {
@@ -241,5 +257,18 @@ let g:LanguageClient_serverCommands = {
     \   },
     \ },
     \ 'ruby': ['solargraph', 'stdio'],
-    \ 'typescript': ['typescript-language-server', '--stdio']
+    \ 'typescript': ['typescript-language-server', '--stdio'],
+    \ 'rust': ['rust-analyzer']
     \ }
+
+let g:vimspector_enable_mappings = 'HUMAN'
+" for normal mode - the word under the cursor
+nmap <Leader>di <Plug>VimspectorBalloonEval
+" for visual mode, the visually selected text
+xmap <Leader>di <Plug>VimspectorBalloonEval
+
+let g:vimwiki_list = [{'path': '~/vimwiki/',
+                      \ 'syntax': 'markdown', 'ext': '.md'}]
+au filetype vimwiki silent! iunmap <buffer> <Tab>
+
+nnoremap <Leader>jf :%!jq .<CR>
