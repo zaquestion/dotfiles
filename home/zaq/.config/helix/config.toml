@@ -1,0 +1,21 @@
+theme = "monozaq"
+
+[editor]
+true-color = true
+line-number = "relative"
+auto-pairs = false
+
+[editor.lsp]
+display-inlay-hints = true
+
+[keys.normal]
+x = ["goto_line_start", "select_mode", "goto_line_end_newline"]
+X = ["goto_line_start", "select_mode", "goto_line_end_newline"]
+
+[keys.normal.space]
+t = ":toggle-option lsp.display-inlay-hints"
+o = "file_picker_in_current_buffer_directory"
+
+[keys.select]
+x = "extend_line_below"
+X = "extend_line_above"
