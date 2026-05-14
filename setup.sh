@@ -83,11 +83,6 @@ if ! [ -x "$(command -v gh)" ]; then
     sudo apt install gh
 fi
 
-if ! [ -x "$(command -v lab)" ]; then
-	set +x; echo "===== Getting lab ====="; set -x
-	curl -s https://raw.githubusercontent.com/zaquestion/lab/master/install.sh | bash
-fi
-
 if ! [ -x "$(command -v dwm)" ]; then
 	set +x; echo "===== Compiling dwm ====="; set -x
 	go get github.com/zaquestion/gods
@@ -124,14 +119,17 @@ nvim +PlugInstall +UpdateRemotePlugins +GoInstallBinaries +qall
 
 # From https://docs.docker.com/engine/installation/linux/debian/
 echo "===== Docker ====="
-sudo apt install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-sudo apt update && \
-sudo apt install -y docker-ce && \
-sudo gpasswd -a ${USER} docker && \
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -sL "https://api.github.com/repos/docker/compose/releases/latest" | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-sudo chmod a+x /usr/local/bin/docker-compose
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo gpasswd -a ${USER} docker
 
 touch ~/.dotfiles_initialized

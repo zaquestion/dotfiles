@@ -5,6 +5,9 @@ true-color = true
 line-number = "relative"
 auto-pairs = false
 
+[editor.soft-wrap]
+enable = true
+
 [editor.lsp]
 display-inlay-hints = true
 

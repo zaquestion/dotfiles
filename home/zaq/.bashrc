@@ -1,12 +1,10 @@
 # "Application" Variables
 export projects=~/projects
 export GOPATH=$projects/go
-export GOBIN=$projects/go/bin
-export GOROOT=/usr/local/go
-export PATH=~/scripts/:~/bin:$GOPATH/bin:/snap/bin:~/.pyenv/bin:$GOROOT/bin:$PATH
+export PATH=~/.local/share/mise/shims:~/scripts/:~/bin:$GOPATH/bin:/snap/bin:~/.local/bin:/usr/sbin:$PATH
 export EDITOR=$(which vim)
 
-eval "$(keychain --eval --agents ssh id_rsa)"
+eval "$(keychain --eval --agents ssh id_ed25519 google_compute_engine)"
 
 # Source external
 if [ ! -r ~/.git-completion.bash ]; then
@@ -15,17 +13,15 @@ if [ ! -r ~/.git-completion.bash ]; then
 fi
 source ~/.git-completion.bash
 
-if [ ! -r ~/.docker-compose-completion.bash ]; then
-	curl -sL "https://raw.githubusercontent.com/docker/compose/$(docker-compose version --short)/contrib/completion/bash/docker-compose" > ~/.docker-compose-completion.bash
-fi
-source ~/.docker-compose-completion.bash
-
 xset r rate 200 100
+source <(mise activate bash --shims)
 # "Application" Alias
-if which nvim; then
-	export EDITOR=$(which nvim)
-	alias vim=nvim
-fi
+#if which nvim; then
+#	export EDITOR=$(which nvim)
+#	alias vim=nvim
+#fi
+export EDITOR=/home/zaq/.local/share/mise/shims/nvim
+alias vim=nvim
 if which hub; then
 	alias git=hub
 	if [ ! -r ~/.hub-completion.bash ]; then
@@ -52,10 +48,11 @@ export zaq=$GOPATH/src/github.com/zaquestion
 
 # User Alias
 alias ag="ag --ignore-dir vendor"
+alias rgf='rg --files | rg'
 alias xclip="xclip -selection clipboard"
 
 # Terminal Settings
-export TERM="xterm-256color"
+export TERM="screen-256color"
 
 git_branch()
 {
@@ -107,10 +104,6 @@ bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 ############### HISTORY SECTION ####################
 
-# Modifies PROMPT_COMMAND
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-
 # expand environment vars to there full path for tab complete
 shopt -s direxpand
 # badass globbing
@@ -119,3 +112,15 @@ shopt -s globstar
 # Disables caps lock key
 # reset: setxkbmap -option
 setxkbmap -option ctrl:nocaps
+
+source <(mise activate bash --shims)
+
+
+# pnpm
+export PNPM_HOME="/home/zaq/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+export PATH="$HOME/.local/bin:$PATH"

@@ -3,4 +3,6 @@ xset r rate 200 100
 
 vmware-user-suid-wrapper
 $GOPATH/bin/gods &
+# TODO wat was this about?
+#feh --bg-fill /home/zaq/.config/pgcli/pgcfg
 exec dwm

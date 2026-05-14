@@ -57,11 +57,28 @@ Plug 'puremourning/vimspector'
 
 " ai
 Plug 'github/copilot.vim'
+Plug 'folke/snacks.nvim'
+Plug 'coder/claudecode.nvim'
+
+" plenary is a dependency of copilot chat
+"Plug 'nvim-lua/plenary.nvim'
+"Plug 'CopilotC-Nvim/CopilotChat.nvim'
 
 " notes
 Plug 'vimwiki/vimwiki'
 
 call plug#end()
+
+lua << EOF
+require("claudecode").setup({
+})
+EOF
+
+"lua << EOF
+"require("CopilotChat").setup {
+"  -- See Configuration section for options
+"}
+"EOF
 
 set timeoutlen=1000 ttimeoutlen=10
 
@@ -127,8 +144,6 @@ nnoremap <leader><CR> :noh<CR>
 set shiftwidth=4
 set expandtab
 
-set pastetoggle=<F2>
-
 " Keybinding hotkeys for switching windows
 map <C-h> <C-w>h
 map <C-j> <C-w>j
@@ -146,6 +161,9 @@ nnoremap <leader>E :Explore<CR>
 " re-executes the last command
 nnoremap <leader><leader> @:
 nnoremap <leader>ft :exec 'sp ~/.config/nvim/ftplugin/' . &filetype . '.vim' <CR>
+
+vnoremap <leader>p :CopilotChatPrompt<CR>
+nnoremap <leader>c :CopilotChatOpen<CR>
 
 set tags=$projects/tags
 nmap <F8> :TagbarToggle<CR>
