@@ -11,15 +11,6 @@
 
 test -r ~/.dotfiles_initialized && echo "dotfiles already setup; ~/.dotfiles_initialized exists!" && exit 0
 
-read -p "Setup requires an internet connection, is long, and requires checkins. Is this okay? (Y/n)? " answer
-case ${answer:0:1} in
-    y|Y )
-    ;;
-    * )
-	    exit 0
-    ;;
-esac
-
 set -x
 find ~ -mindepth 1 -maxdepth 1 -type d -exec rmdir {} \;
 # Setup home directories
@@ -53,83 +44,8 @@ case ${answer:0:1} in
 esac
 
 echo "===== Symlinking Files ====="
-# Find all files and create symlinks from $HOME
-(cd home/zaq && find . -type f -exec test ! -r ~/'{}' \; -and -exec ln -s `pwd`/'{}' ~/'{}' \;)
-
-# needed for PATH and GO env vars
-set +x; source ~/.bashrc; set -x
-
-echo '===== "system" packages ====='
-sudo apt update
-sudo apt install -y neovim tmux keychain xclip scrot graphviz keynav curl xinit jq ripgrep
-sudo apt install -y x11-xserver-utils
-sudo apt install -y build-essential cmake libxinerama-dev
-
-# Get Applications
-if ! [ -x "$(command -v go)" ]; then
-	set +x; echo "===== Downloading latest GoLang ====="; set -x
-	curl -L "https://golang.org/dl$(curl -s -L https://golang.org/dl | grep 'download downloadBox.\+linux-amd64' | cut -d'"' -f 4)" | sudo tar -C /usr/local/ -xzf -
-fi
-
-if ! [ -x "$(command -v hub)" ]; then
-	set +x; echo "===== Getting hub ====="; set -x
-	go get github.com/github/hub
-fi
-
-if ! [ -x "$(command -v gh)" ]; then
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-    sudo apt-add-repository https://cli.github.com/packages
-    sudo apt update
-    sudo apt install gh
-fi
-
-if ! [ -x "$(command -v dwm)" ]; then
-	set +x; echo "===== Compiling dwm ====="; set -x
-	go get github.com/zaquestion/gods
-	git clone git://git.suckless.org/dwm ~/projects/c/dwm
-	cp ~/suckless/dwm/* ~/projects/c/dwm/
-	(cd ~/projects/c/dwm && sudo make install)
-fi
-
-if ! [ -x "$(command -v st)" ]; then
-	set +x; echo "===== Compiling st ====="; set -x
-	git clone https://go.googlesource.com/image /tmp/image-go-fonts
-	sudo cp /tmp/image-go-fonts/font/gofont/ttfs/Go-Mono* /usr/share/fonts/truetype/
-	git clone git://git.suckless.org/st ~/projects/c/st
-	cp ~/suckless/st/* ~/projects/c/st/
-	(cd ~/projects/c/st && sudo make install)
-fi
-if ! [ -x "$(command -v gopls)" ]; then
-    GO111MODULE=on go get golang.org/x/tools/gopls@latest
-fi
-
-# Python Stuff
-echo "===== Python Environment ====="
-sudo apt install -y make openssl libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
-sudo apt install -y llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev
-
-set +x; source ~/.bashrc; set -x
-pip install pynvim seqdiag yapf awscli
-
-# Config Applications
-echo "===== nvim Environment ====="
-curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-nvim +PlugInstall +UpdateRemotePlugins +GoInstallBinaries +qall
-
-# From https://docs.docker.com/engine/installation/linux/debian/
-echo "===== Docker ====="
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo gpasswd -a ${USER} docker
+# Find all files and create symlinks from $HOME. .gitkeep files only exist to
+# keep otherwise empty dirs in the repo, they don't belong in $HOME
+(cd home/zaq && find . -type f ! -name .gitkeep -exec test ! -r ~/'{}' \; -and -exec ln -s `pwd`/'{}' ~/'{}' \;)
 
 touch ~/.dotfiles_initialized
