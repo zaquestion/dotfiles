@@ -1,0 +1,17 @@
+# Global mise tools — managed in dotfiles, symlinked to ~/.config/mise/config.toml
+# Run `mise install` on a new machine to provision everything below.
+
+[tools]
+# languages / runtimes
+go = "latest"
+node = "latest"
+python = "3.14.6"
+rust = "stable"
+neovim = "0.12.4"
+
+# editor tooling (formatters, finders, language servers, debuggers)
+stylua = "latest"                                  # lua formatter (conform.nvim)
+fd = "latest"                                      # fast find (telescope)
+"aqua:tree-sitter/tree-sitter" = "latest"          # tree-sitter CLI (nvim-treesitter main)
+"go:golang.org/x/tools/gopls" = "latest"           # go language server
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"  # go debugger (nvim-dap-go)

@@ -1,18 +1,12 @@
 setlocal lazyredraw
-let g:syntastic_go_checkers = ['golint', 'govet', 'errcheck']
-let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }
+setlocal shiftwidth=8
 
-" Set go guru scope to current Git repo root... Update ad-hoc with :GoGuruScope if needing to include code outside of repo root.
-"let root_module = system("ABS=$(git rev-parse --show-toplevel); (cd $ABS && echo -n $(grep module go.mod | cut -d' ' -f2-))")
-"let g:go_guru_scope = [root_module]
+" vim-go is gone; drive Go via gopls (LSP) + telescope + plain go commands.
+nnoremap <buffer> <leader>b :!go build ./...<CR>
+nnoremap <buffer> <leader>t :!go test ./...<CR>
+nnoremap <buffer> <leader>r <cmd>Telescope lsp_references<CR>
+nnoremap <buffer> <leader>m <cmd>Telescope lsp_implementations<CR>
+nnoremap <buffer> <leader>i <cmd>lua vim.lsp.buf.hover()<CR>
 
-nnoremap <leader>b :GoBuild<CR>
-nnoremap <leader>t :GoTest<CR>
-nnoremap <leader><leader>t :GoTestFunc<CR>
-nnoremap <leader>r :call LanguageClient#textDocument_references()<CR>
-nnoremap <leader>p :GoChannelPeers<CR>
-nnoremap <leader>m :GoImplements<CR>
-nnoremap <leader>i :GoInfo<CR>
-nnoremap <leader>d :GoDoc<CR>
-
-set shiftwidth=8
+" debug the nearest Go test via nvim-dap-go (delve)
+nnoremap <buffer> <leader>dt <cmd>lua require('dap-go').debug_test()<CR>
