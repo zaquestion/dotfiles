@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# footcwd opens a new foot terminal in the working directory of the currently
+# focused window. It's the wayland/foot replacement for tmuxcwd, using
+# focused_dir instead of a tmux session lookup.
+
+here=$(dirname "$(readlink -f "$0")")
+exec foot --working-directory="$("${here}/focused_dir")" "$@"

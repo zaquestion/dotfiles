@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# focused_dir returns the working directory of the currently focused window.
+#
+# Wayland has no cross-client equivalent of X11's _NET_ACTIVE_WINDOW +
+# _NET_WM_PID, so this relies on a small dwl patch (patches/dwl in dotfiles)
+# that writes the focused client's pid to $XDG_RUNTIME_DIR/dwl/focused.pid on
+# every focus change. From that pid we walk to the leaf process and read its
+# cwd, the same way x_focused_dir did on X11 (minus the tmux handling).
+
+pidfile="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/dwl/focused.pid"
+PID=$(cat "${pidfile}" 2>/dev/null)
+fPID=${PID}
+
+# For something like: while true; do DEBUG=13 focused_dir; sleep .5; done
+if [[ "${DEBUG}" != "" ]]; then
+	trap "{
+		echo ${fPID} > /tmp/lastfpid
+	}" EXIT
+
+	if [[ "$(cat /tmp/lastfpid 2>/dev/null)" == "${fPID}" ]]; then
+		exit 0
+	fi
+	echo "Focused PID: ${fPID}"
+fi
+
+# No focused window (or pid 0) -> fall back to $HOME
+if [[ "${PID}" == "" || "${PID}" == "0" ]]; then
+	echo "${HOME}"
+	exit 0
+fi
+
+# traverse to leaf process
+while [[ ${PID} != "" ]]; do
+	lPID=${PID}
+	PID=$(ps -o pid= --ppid ${PID} | head -1 | tr -d '[:space:]')
+	# If the pid doesn't still exist, we found the above subprocess pid.
+	# This will force ${PID} = "" and ${lPID} will maintain the correct leaf
+	PID=$(ps -o pid= -p "${PID}" 2>/dev/null | tr -d '[:space:]')
+done
+
+lDir=$(readlink -e /proc/${lPID}/cwd)
+if [[ "${lDir}" == "" ]]; then
+	lDir=${HOME}
+fi
+
+logf=/tmp/focused_dir.log
+if [[ "${DEBUG}" != "" ]]; then
+	logf=/dev/fd/1
+fi
+
+cat <<- EOF | column -t -s, >> ${logf}
+DATETIME,PID,fPID,lPID,lDir
+$(date),$$,${fPID},${lPID},${lDir}
+EOF
+if [ -x "$(command -v pstree)" ]; then
+	pstree -p ${fPID} >> ${logf}
+fi
+echo >> ${logf}
+
+echo ${lDir}
