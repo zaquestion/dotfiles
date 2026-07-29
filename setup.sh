@@ -50,6 +50,19 @@ case ${answer:0:1} in
     ;;
 esac
 
+# fish writes a placeholder ~/.config/fish/config.fish the first time it runs,
+# and the symlink pass below leaves real files alone -- so ours would never
+# land on a machine where fish has already been started once.
+test -f ~/.config/fish/config.fish && test ! -L ~/.config/fish/config.fish && \
+read -p "Existing ~/.config/fish/config.fish found. Overwrite (Y/n)? " answer && \
+case ${answer:0:1} in
+    y|Y )
+	    rm ~/.config/fish/config.fish
+    ;;
+    * )
+    ;;
+esac
+
 echo "===== Symlinking Files ====="
 # Find all files and create symlinks from $HOME. .gitkeep files only exist to
 # keep otherwise empty dirs in the repo, they don't belong in $HOME.
