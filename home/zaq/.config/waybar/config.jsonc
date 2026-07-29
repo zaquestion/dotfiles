@@ -31,6 +31,13 @@
         "tray",
         "custom/power"
     ],
+    "dwl/window": {
+        // {layout} is the dwl layout symbol from config.h: "[]=" tile, "[M]"
+        // monocle, "><>" the floating layout. Note this is the *layout*, not
+        // whether the focused window itself was floated with Mod+Shift+Space --
+        // dwl publishes that over ipc but waybar 0.12 ignores the event.
+        "format": "{layout} {title}"
+    },
     "keyboard-state": {
         "numlock": true,
         "capslock": true,
