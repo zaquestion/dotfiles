@@ -71,6 +71,22 @@ echo "===== Symlinking Files ====="
 # clobber something like a hand-edited ~/.bashrc.
 (cd home/zaq && find . -type f ! -name .gitkeep -exec test ! -e ~/'{}' -o -L ~/'{}' \; -and -exec ln -sfn `pwd`/'{}' ~/'{}' \;)
 
+echo "===== Installing packages ====="
+# Debian/apt only; skipped elsewhere. apt install is idempotent -- already
+# installed packages are a no-op -- so re-running setup costs nothing.
+# Fonts: waybar's config.jsonc uses glyphs from all three of these, and without
+# them the bar renders tofu boxes instead of icons.
+set +x # apt is noisy enough on its own
+if command -v apt >/dev/null; then
+	sudo apt install -y \
+		fonts-font-awesome \
+		fonts-weather-icons \
+		fonts-material-design-icons-iconfont
+else
+	echo "  no apt; skipping package install"
+fi
+set -x
+
 echo "===== Provisioning language tooling ====="
 # Everything below is idempotent -- re-running is a no-op once installed.
 
