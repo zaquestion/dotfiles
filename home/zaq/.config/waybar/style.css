@@ -11,13 +11,18 @@
 
 /* The default stack is `FontAwesome, Roboto, Helvetica, Arial, sans-serif`,
  * which leaves most of config.jsonc's icons with no font to resolve against.
- * FontAwesome and Weather Icons cover the bulk of them; Material Icons covers
- * the U+E3xx range; Symbols Nerd Font covers the U+F0000+ glyphs the stock
- * waybar config uses (temperature, network, muted pulseaudio). setup.sh
- * installs all four.
+ * FontAwesome and Weather Icons cover the bulk of them, and Symbols Nerd Font
+ * covers the U+E3xx and U+F0000+ ranges the stock waybar config uses
+ * (pulseaudio, temperature, network). setup.sh installs all three.
+ *
+ * Do NOT add "Material Icons" (fonts-material-design-icons-iconfont) here. It
+ * is the ligature-based font, so it claims lowercase ASCII and digits and maps
+ * them to BLANK glyphs -- anything ahead of Roboto in this list makes every
+ * label and number in the bar disappear. Symbols Nerd Font covers every glyph
+ * it would have provided anyway.
  *
  * The remaining non-icon characters -- ⸨ ⸩ in the mpd format and 🎜 in
  * custom/media -- fall through to the text and emoji fonts on purpose. */
 * {
-    font-family: FontAwesome, "Weather Icons", "Material Icons", "Symbols Nerd Font", Roboto, Helvetica, Arial, sans-serif;
+    font-family: FontAwesome, "Weather Icons", "Symbols Nerd Font", Roboto, Helvetica, Arial, sans-serif;
 }
