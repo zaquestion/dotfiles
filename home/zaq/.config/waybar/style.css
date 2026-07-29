@@ -10,14 +10,14 @@
 @import url("/etc/xdg/waybar/style.css");
 
 /* The default stack is `FontAwesome, Roboto, Helvetica, Arial, sans-serif`,
- * which leaves the Weather Icons and Material glyphs in config.jsonc with no
- * font to resolve against. setup.sh installs all four families below.
+ * which leaves most of config.jsonc's icons with no font to resolve against.
+ * FontAwesome and Weather Icons cover the bulk of them; Material Icons covers
+ * the U+E3xx range; Symbols Nerd Font covers the U+F0000+ glyphs the stock
+ * waybar config uses (temperature, network, muted pulseaudio). setup.sh
+ * installs all four.
  *
- * The two Material entries are different fonts, not duplicates: "Material
- * Icons" (fonts-material-design-icons-iconfont) covers the U+E000 private-use
- * range, while "Material Design Icons" (fonts-materialdesignicons-webfont)
- * covers U+F0000+, which is where config.jsonc's temperature and pulseaudio
- * glyphs live. */
+ * The remaining non-icon characters -- ⸨ ⸩ in the mpd format and 🎜 in
+ * custom/media -- fall through to the text and emoji fonts on purpose. */
 * {
-    font-family: FontAwesome, "Weather Icons", "Material Icons", "Material Design Icons", Roboto, Helvetica, Arial, sans-serif;
+    font-family: FontAwesome, "Weather Icons", "Material Icons", "Symbols Nerd Font", Roboto, Helvetica, Arial, sans-serif;
 }

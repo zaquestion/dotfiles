@@ -81,10 +81,28 @@ if command -v apt >/dev/null; then
 	sudo apt install -y \
 		fonts-font-awesome \
 		fonts-weather-icons \
-		fonts-material-design-icons-iconfont \
-		fonts-materialdesignicons-webfont
+		fonts-material-design-icons-iconfont
 else
 	echo "  no apt; skipping package install"
+fi
+
+# The rest of waybar's icons come from Nerd Fonts' Material Design Icons remap
+# (U+F0000+), which no Debian package covers -- fonts-materialdesignicons-webfont
+# is the old BMP numbering and overlaps FontAwesome entirely. The symbols-only
+# release is icons with no text glyphs, so it's inert until something in the font
+# stack falls through to it. Idempotent: skipped once the ttf is in place.
+nerd_fonts=~/.local/share/fonts
+if [ ! -f "$nerd_fonts/SymbolsNerdFont-Regular.ttf" ] && command -v curl >/dev/null; then
+	nf_tar=$(mktemp)
+	if curl -sfL -o "$nf_tar" \
+		"https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/NerdFontsSymbolsOnly.tar.xz"; then
+		mkdir -p "$nerd_fonts"
+		tar -xJf "$nf_tar" -C "$nerd_fonts" --wildcards 'SymbolsNerdFont*.ttf'
+		fc-cache -f "$nerd_fonts"
+	else
+		echo "  failed to fetch Symbols Nerd Font; some waybar icons will be tofu"
+	fi
+	rm -f "$nf_tar"
 fi
 set -x
 
