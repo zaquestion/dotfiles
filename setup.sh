@@ -106,4 +106,39 @@ if [ ! -x "$codelldb_dir/extension/adapter/codelldb" ] && command -v unzip >/dev
 fi
 set -x
 
+echo "===== Applying dwl patches ====="
+# dwl is built from a local checkout; our patches live in patches/dwl and are
+# applied in filename order. A patch that reverse-checks cleanly is already
+# applied, so re-running setup is a no-op. Note this only patches the source --
+# the compositor still has to be rebuilt and reinstalled by hand for any of it
+# to take effect. See patches/dwl/README.md.
+set +x # the loop is noisy under -x; the echoes below say everything useful
+dwl_src=~/projects/dwl
+if [ ! -d "$dwl_src/.git" ]; then
+	echo "  no dwl checkout at $dwl_src; skipping (see patches/dwl/README.md)"
+elif ! git -C "$dwl_src" diff --quiet; then
+	# A dirty tree means the stack is already applied (or hand-modified), so
+	# leave it alone. We gate on tree cleanliness rather than reverse-checking
+	# each patch, because reverse-check is unreliable for a stack: 0002 and
+	# 0003 rewrite the dwl.c context lines that 0001 needs in order to reverse,
+	# so an already-applied 0001 reports as failed once the rest land on top.
+	echo "  $dwl_src has local modifications; assuming already patched, leaving alone"
+	echo "  (verify with: git -C $dwl_src diff --stat)"
+else
+	# Clean checkout: apply the stack in order. They're interdependent -- each
+	# patch's context assumes the previous one landed -- so this has to be
+	# sequential, and a failure partway leaves the tree partially patched.
+	for p in "$(pwd)"/patches/dwl/0*.patch; do
+		if git -C "$dwl_src" apply "$p"; then
+			echo "  applied: $(basename "$p")"
+		else
+			echo "  FAILED:  $(basename "$p") -- tree is now PARTIALLY patched."
+			echo "  Reset with 'git -C $dwl_src checkout .' and see patches/dwl/README.md"
+			break
+		fi
+	done
+	echo "  -> run 'make && sudo make install' in $dwl_src, then restart the session"
+fi
+set -x
+
 touch ~/.dotfiles_initialized
