@@ -5,6 +5,7 @@
     //"height": 40, // Waybar height (to be removed for auto height)
     // "width": 1280, // Waybar width
     "spacing": 1, // Gaps between modules (4px)
+    "reload_style_on_change": true, // restyle live on save, imports included
     // Choose the order of the modules
     "modules-left": [
 	"dwl/tags",

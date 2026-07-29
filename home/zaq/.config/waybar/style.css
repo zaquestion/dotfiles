@@ -1,0 +1,17 @@
+/*
+ * Waybar picks exactly ONE stylesheet -- the first hit walking
+ * $XDG_CONFIG_HOME/waybar, ~/.config/waybar, ~/waybar, /etc/xdg/waybar -- so
+ * this file REPLACES the packaged default rather than layering onto it. The
+ * import below pulls the default back in; everything after it overrides.
+ *
+ * Note that means an upgrade to the waybar package can restyle the bar out
+ * from under us, and the path is Debian-specific.
+ */
+@import url("/etc/xdg/waybar/style.css");
+
+/* The default stack is `FontAwesome, Roboto, Helvetica, Arial, sans-serif`,
+ * which leaves the Weather Icons and Material glyphs in config.jsonc with no
+ * font to resolve against. setup.sh installs all three. */
+* {
+    font-family: FontAwesome, "Weather Icons", "Material Icons", Roboto, Helvetica, Arial, sans-serif;
+}
