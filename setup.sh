@@ -74,14 +74,15 @@ echo "===== Symlinking Files ====="
 echo "===== Installing packages ====="
 # Debian/apt only; skipped elsewhere. apt install is idempotent -- already
 # installed packages are a no-op -- so re-running setup costs nothing.
-# Fonts: waybar's config.jsonc uses glyphs from all three of these, and without
-# them the bar renders tofu boxes instead of icons.
+# Fonts: waybar's config.jsonc draws its icons from Font Awesome and Weather
+# Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
+# asks for first.
 set +x # apt is noisy enough on its own
 if command -v apt >/dev/null; then
 	sudo apt install -y \
 		fonts-font-awesome \
 		fonts-weather-icons \
-		fonts-material-design-icons-iconfont
+		fonts-roboto
 else
 	echo "  no apt; skipping package install"
 fi
