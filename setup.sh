@@ -81,7 +81,8 @@ if command -v apt >/dev/null; then
 	sudo apt install -y \
 		fonts-font-awesome \
 		fonts-weather-icons \
-		fonts-material-design-icons-iconfont
+		fonts-material-design-icons-iconfont \
+		fonts-materialdesignicons-webfont
 else
 	echo "  no apt; skipping package install"
 fi

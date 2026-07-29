@@ -11,7 +11,13 @@
 
 /* The default stack is `FontAwesome, Roboto, Helvetica, Arial, sans-serif`,
  * which leaves the Weather Icons and Material glyphs in config.jsonc with no
- * font to resolve against. setup.sh installs all three. */
+ * font to resolve against. setup.sh installs all four families below.
+ *
+ * The two Material entries are different fonts, not duplicates: "Material
+ * Icons" (fonts-material-design-icons-iconfont) covers the U+E000 private-use
+ * range, while "Material Design Icons" (fonts-materialdesignicons-webfont)
+ * covers U+F0000+, which is where config.jsonc's temperature and pulseaudio
+ * glyphs live. */
 * {
-    font-family: FontAwesome, "Weather Icons", "Material Icons", Roboto, Helvetica, Arial, sans-serif;
+    font-family: FontAwesome, "Weather Icons", "Material Icons", "Material Design Icons", Roboto, Helvetica, Arial, sans-serif;
 }
