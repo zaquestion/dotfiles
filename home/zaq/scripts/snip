@@ -3,9 +3,9 @@
 # slurp does the selection, grim does the capture -- the wayland equivalents of
 # slop/maim, talking to dwl over wlr-layer-shell and wlr-screencopy.
 #
-# A timestamped copy also lands in ~/downloads: wl-copy's clipboard only lives
-# as long as the process holding it, so the file is what survives a logout or a
-# second snip. ~/downloads because setup.sh prunes ~/Pictures.
+# A timestamped copy also lands in ~/snips: wl-copy's clipboard only lives as
+# long as the process holding it, so the file is what survives a logout or a
+# second snip. ~/snips because setup.sh prunes ~/Pictures; it's created there.
 
 set -euo pipefail
 
