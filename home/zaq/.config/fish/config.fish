@@ -97,6 +97,51 @@ if status is-interactive
     # dropped: `ag`, `xclip`, and the git=hub / git=lab aliases -- none of those
     # binaries are installed here (wl-copy replaces xclip on wayland)
 
+    # ---- how ----
+    # `how <question>` asks claude for a shell command and leaves it sitting on
+    # the prompt, unexecuted, so it can be read and edited before it runs.
+    #
+    # Ported from a zsh version; three things had no fish equivalent:
+    #   print -z <cmd>    pushes onto the next prompt -> `commandline -r`, which
+    #                     replaces the line being edited (hence the function
+    #                     lives in the interactive block; commandline errors out
+    #                     everywhere else)
+    #   pbcopy            -> wl-copy, same wayland clipboard ~/scripts/snip uses
+    #   alias how='noglob ...'
+    #                     fish has no noglob, so a `*` or `?` in the question is
+    #                     still glob-expanded (or, with no match, is an error
+    #                     before the function is ever called). Quote those:
+    #                     how 'how do I delete every *.o'
+    #
+    # -p prints one response and exits; --tools "" leaves the model unable to do
+    # anything but answer, which also keeps it from stalling on a permission
+    # prompt nothing is there to accept. `command` so a future `how`/`claude`
+    # alias can't recurse, `--` so a question opening with `-` isn't read as a
+    # flag. The model is told to skip markdown, but asks anyway often enough to
+    # be worth stripping backticks and blank lines; string collect keeps a
+    # multi-line answer as one string instead of letting the command
+    # substitution split it into separate arguments.
+    function how --description 'ask claude for a command, leave it on the prompt'
+        if test (count $argv) -eq 0
+            echo "Usage: how <what command do you need?>"
+            return 1
+        end
+
+        set -l result (command claude -p --model sonnet --max-turns 1 --tools "" \
+            --append-system-prompt "You are a command-line expert. Respond with ONLY the command itself - no explanation, no markdown, no code blocks." \
+            -- "$argv" 2>/dev/null \
+            | string replace -ra '`' '' | string trim \
+            | string match -rv '^$' | string collect)
+
+        test -n "$result"; or return 1
+
+        # printf rather than echo: no trailing newline, so pasting the clipboard
+        # into another prompt doesn't submit the command on arrival.
+        printf '%s' $result | wl-copy
+        echo "Command ready (also copied to clipboard):"
+        commandline -r -- $result
+    end
+
     # ssh agent; keychain reuses one agent across logins. Inert until keychain
     # is installed -- and only id_ed25519 now, google_compute_engine is gone.
     command -q keychain; and keychain --eval --agents ssh id_ed25519 | source
