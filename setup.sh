@@ -79,6 +79,8 @@ echo "===== Installing packages ====="
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
 # asks for first.
 # grim/slurp back ~/scripts/snip, bound to mod-shift-s in dwl's config.h.
+# The remainder are scrcpy's build and runtime deps, per upstream doc/linux.md;
+# the build itself is further down.
 set +x # apt is noisy enough on its own
 if command -v apt >/dev/null; then
 	sudo apt install -y \
@@ -87,7 +89,25 @@ if command -v apt >/dev/null; then
 		fonts-roboto \
 		grim \
 		slurp \
-		wl-clipboard
+		wl-clipboard \
+		ffmpeg \
+		libsdl3-0 \
+		libusb-1.0-0 \
+		adb \
+		wget \
+		gcc \
+		git \
+		pkg-config \
+		meson \
+		ninja-build \
+		libsdl3-dev \
+		libavcodec-dev \
+		libavdevice-dev \
+		libavformat-dev \
+		libavutil-dev \
+		libswresample-dev \
+		libusb-1.0-0-dev \
+		libv4l-dev
 else
 	echo "  no apt; skipping package install"
 fi
@@ -143,6 +163,33 @@ if [ ! -x "$codelldb_dir/extension/adapter/codelldb" ] && command -v unzip >/dev
 			unzip -q -o "$codelldb_dir/codelldb.vsix" -d "$codelldb_dir"
 			rm -f "$codelldb_dir/codelldb.vsix"
 		fi
+	fi
+fi
+set -x
+
+echo "===== Installing scrcpy ====="
+# Built from source rather than installed from apt: Debian only carries 3.3.4
+# (trixie-backports), and upstream marks the distro packages obsolete. The
+# official static build is x86_64-only, so it's no help on arm64 either.
+# install_release.sh fetches the prebuilt server (a checksum-verified, arch-
+# independent blob), builds the client with meson/ninja and installs it with
+# sudo -- see doc/linux.md upstream. Deps came in with the apt block above.
+# Idempotent: skipped once scrcpy is on PATH. To update after a new release:
+#   cd ~/projects/scrcpy && git pull && ./install_release.sh
+# and to uninstall: sudo ninja -Cbuild-auto uninstall
+set +x # meson and ninja are noisy enough on their own
+scrcpy_src=~/projects/scrcpy
+if command -v scrcpy >/dev/null; then
+	echo "  scrcpy already installed; skipping"
+elif ! command -v meson >/dev/null; then
+	echo "  no meson; skipping scrcpy build"
+else
+	test -d "$scrcpy_src/.git" || git clone https://github.com/Genymobile/scrcpy "$scrcpy_src"
+	# The build shells out to sudo for the install step, so this may prompt.
+	if (cd "$scrcpy_src" && ./install_release.sh); then
+		echo "  installed: $(scrcpy --version 2>/dev/null | head -1)"
+	else
+		echo "  scrcpy build failed; see $scrcpy_src"
 	fi
 fi
 set -x
