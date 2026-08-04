@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zaq Question <zaquestion@gmail.com>
+Subject: [PATCH] mark a floating focused client in the layout symbol
+
+dwl already publishes the focused client's floating state over ipc
+(zdwl_ipc_output_v2_send_floating, added by 0001), but waybar 0.12's
+dwl/window module ignores that event -- its only format replacements are
+{title}, {app_id} and {layout}, and {layout} comes from the layout_symbol
+event. So there is no way to tell from the bar whether the focused window
+was floated with Mod+Shift+Space.
+
+Suffix the symbol sent over ipc with "~" when the focused client is
+floating: "[]=" tiled, "[]=~" with a floating window focused. The monitor's
+own ltsymbol is left untouched, so nothing else (dwl's internal state, the
+floating event itself) changes.
+---
+ dwl.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/dwl.c b/dwl.c
+index 0000000..0000000 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -1458,6 +1458,7 @@
+ 	Client *c, *focused;
+ 	int tagmask, state, numclients, focused_client, tag;
+ 	const char *title, *appid;
++	char ltsymbol[LENGTH(monitor->ltsymbol) + 2];
+ 	focused = focustop(monitor);
+ 	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
+
+@@ -1484,10 +1485,16 @@
+ 	title = focused ? client_get_title(focused) : "";
+ 	appid = focused ? client_get_appid(focused) : "";
+
++	/* Bars get the floating state below, but waybar 0.12's dwl/window module
++	 * ignores that event -- it only renders the layout symbol. Fold the two
++	 * together so a floated client is visible: "[]=" tiled, "[]=~" floating. */
++	snprintf(ltsymbol, sizeof ltsymbol, "%s%s", monitor->ltsymbol,
++			focused && focused->isfloating ? "~" : "");
++
+ 	zdwl_ipc_output_v2_send_layout(ipc_output->resource, monitor->lt[monitor->sellt] - layouts);
+ 	zdwl_ipc_output_v2_send_title(ipc_output->resource, title);
+ 	zdwl_ipc_output_v2_send_appid(ipc_output->resource, appid);
+-	zdwl_ipc_output_v2_send_layout_symbol(ipc_output->resource, monitor->ltsymbol);
++	zdwl_ipc_output_v2_send_layout_symbol(ipc_output->resource, ltsymbol);
+ 	if (wl_resource_get_version(ipc_output->resource) >= ZDWL_IPC_OUTPUT_V2_FULLSCREEN_SINCE_VERSION) {
+ 		zdwl_ipc_output_v2_send_fullscreen(ipc_output->resource, focused ? focused->isfullscreen : 0);
+ 	}
+--
+2.43.0
+

@@ -14,6 +14,7 @@ tree at `home/zaq/projects/dwl/config.h` and `setup.sh` symlinks it into place.
 | 0001 | `ipc.patch` | upstream [dwl-ipc-unstable-v2](https://codeberg.org/dwl/dwl-patches/wiki/ipc) -- lets status bars talk to dwl |
 | 0002 | `pertag.patch` | upstream [pertag](https://codeberg.org/dwl/dwl-patches/wiki/pertag) -- per-tag layout, mfact, nmaster |
 | 0003 | `publish-focused-client-pid.patch` | local -- see below |
+| 0004 | `mark-floating-client-in-layout-symbol.patch` | local -- see below |
 
 Not tracked: the local `config.mk` uncomments `XWAYLAND`/`XLIBS` to build X11
 support. Nothing currently uses it (no Xwayland clients), so it's left out of the
@@ -25,6 +26,14 @@ Writes the focused client's pid to `$XDG_RUNTIME_DIR/dwl/focused.pid` on every
 focus change. Wayland has no cross-client equivalent of X11's
 `_NET_ACTIVE_WINDOW` + `_NET_WM_PID`, so this is what lets `focused_dir` (and the
 `footcwd` launcher) resolve the active window's working directory.
+
+### 0004-mark-floating-client-in-layout-symbol.patch
+
+Appends `~` to the layout symbol sent over ipc when the focused client is
+floating, so waybar shows `[]=~` instead of `[]=`. dwl already publishes the
+floating state as its own ipc event, but waybar 0.12's `dwl/window` module
+ignores it -- `{layout}` (fed by the layout_symbol event) is the only hook we
+have. Only the ipc copy is decorated; `monitor->ltsymbol` is untouched.
 
 ## Applying
 
@@ -49,11 +58,12 @@ fully-applied 0001 reports as *not* applied. Check the tree as a whole instead:
 
     git -C ~/projects/dwl diff --stat
 
-The topmost patch (0003) is the exception -- nothing stacks on it, so it can be
-dropped and re-added on its own:
+The two local patches (0003, 0004) are the exception -- nothing stacks on them
+and they touch disjoint parts of `dwl.c`, so either can be dropped and re-added
+on its own:
 
-    git apply --reverse ~/projects/dotfiles/patches/dwl/0003-publish-focused-client-pid.patch
-    git apply ~/projects/dotfiles/patches/dwl/0003-publish-focused-client-pid.patch
+    git apply --reverse ~/projects/dotfiles/patches/dwl/0004-mark-floating-client-in-layout-symbol.patch
+    git apply ~/projects/dotfiles/patches/dwl/0004-mark-floating-client-in-layout-symbol.patch
 
 ## Fresh-machine ordering
 

@@ -33,9 +33,10 @@
     ],
     "dwl/window": {
         // {layout} is the dwl layout symbol from config.h: "[]=" tile, "[M]"
-        // monocle, "><>" the floating layout. Note this is the *layout*, not
-        // whether the focused window itself was floated with Mod+Shift+Space --
-        // dwl publishes that over ipc but waybar 0.12 ignores the event.
+        // monocle, "><>" the floating layout. A trailing "~" ("[]=~") means the
+        // focused window itself was floated with Mod+Shift+Space. dwl publishes
+        // that as its own ipc event but waybar 0.12 ignores it, so patch 0004
+        // (patches/dwl) folds it into the symbol instead.
         "format": "{layout} {title}"
     },
     "keyboard-state": {
