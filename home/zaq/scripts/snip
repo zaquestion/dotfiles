@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# snip drags out a region of the screen and puts the png on the clipboard.
+# slurp does the selection, grim does the capture -- the wayland equivalents of
+# slop/maim, talking to dwl over wlr-layer-shell and wlr-screencopy.
+#
+# A timestamped copy also lands in ~/downloads: wl-copy's clipboard only lives
+# as long as the process holding it, so the file is what survives a logout or a
+# second snip. ~/downloads because setup.sh prunes ~/Pictures.
+
+set -euo pipefail
+
+# slurp exits non-zero on escape or an empty drag; that's a cancel, not an error.
+region=$(slurp) || exit 0
+
+file=~/snips/"snip-$(date +%Y%m%d-%H%M%S).png"
+grim -g "$region" "$file"
+
+# --type keeps the mime explicit so pasting into a browser/chat sees an image.
+# wl-copy forks a background process to serve the selection; -f would make it
+# exit after the first paste, and we want the clipboard to stick around.
+wl-copy --type image/png <"$file"
+
+echo "$file"

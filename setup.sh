@@ -33,6 +33,7 @@ mkdir -p ~/projects/go/pkg
 mkdir -p ~/projects/go/bin
 mkdir -p ~/projects/go-mod/src
 mkdir -p ~/projects/python
+mkdir -p ~/snips
 
 echo "===== Replicating Folder Structure ====="
 # Find all directories and make in $HOME. Directories cannot be symlinked from
@@ -77,12 +78,16 @@ echo "===== Installing packages ====="
 # Fonts: waybar's config.jsonc draws its icons from Font Awesome and Weather
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
 # asks for first.
+# grim/slurp back ~/scripts/snip, bound to mod-shift-s in dwl's config.h.
 set +x # apt is noisy enough on its own
 if command -v apt >/dev/null; then
 	sudo apt install -y \
 		fonts-font-awesome \
 		fonts-weather-icons \
-		fonts-roboto
+		fonts-roboto \
+		grim \
+		slurp \
+		wl-clipboard
 else
 	echo "  no apt; skipping package install"
 fi
