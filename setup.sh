@@ -84,6 +84,7 @@ echo "===== Installing packages ====="
 set +x # apt is noisy enough on its own
 if command -v apt >/dev/null; then
 	sudo apt install -y \
+		fish \
 		fonts-font-awesome \
 		fonts-weather-icons \
 		fonts-roboto \
@@ -129,6 +130,27 @@ if [ ! -f "$nerd_fonts/SymbolsNerdFont-Regular.ttf" ] && command -v curl >/dev/n
 		echo "  failed to fetch Symbols Nerd Font; some waybar icons will be tofu"
 	fi
 	rm -f "$nf_tar"
+fi
+set -x
+
+echo "===== Setting fish as the login shell ====="
+# The config above is only half the story -- without this, ~/.config/fish is
+# just a config for a shell nothing ever starts. chsh prompts for the account
+# password, so this can't be done unattended. Idempotent: skipped once the
+# passwd entry already points at fish.
+set +x
+fish_path=$(command -v fish)
+if [ -z "$fish_path" ]; then
+	echo "  fish not installed; skipping"
+elif [ "$(getent passwd "$USER" | cut -d: -f7)" = "$fish_path" ]; then
+	echo "  login shell is already $fish_path; skipping"
+elif ! grep -qxF "$fish_path" /etc/shells; then
+	# chsh refuses anything not in /etc/shells for a non-root caller. The
+	# Debian package registers it on install, so this only bites on a
+	# hand-built fish.
+	echo "  $fish_path missing from /etc/shells; add it, then: chsh -s $fish_path"
+else
+	chsh -s "$fish_path" || echo "  chsh failed; rerun by hand: chsh -s $fish_path"
 fi
 set -x
 
