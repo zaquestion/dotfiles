@@ -79,6 +79,8 @@ echo "===== Installing packages ====="
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
 # asks for first.
 # grim/slurp back ~/scripts/snip, bound to mod-shift-s in dwl's config.h.
+# swaylock is the screen locker, bound to mod-shift-l; it reads its colors from
+# ~/.config/swaylock/config.
 # jq reads the GitHub release JSON in the keychain install below.
 # The remainder are scrcpy's build and runtime deps, per upstream doc/linux.md;
 # the build itself is further down.
@@ -91,6 +93,7 @@ if command -v apt >/dev/null; then
 		fonts-roboto \
 		grim \
 		slurp \
+		swaylock \
 		wl-clipboard \
 		jq \
 		ffmpeg \
