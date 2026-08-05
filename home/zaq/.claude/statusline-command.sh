@@ -2,7 +2,7 @@
 # Claude Code statusline.
 #
 # Layout:   ~/projects/eeg/seizure_tool  (main)*
-#           Opus 5 · 34% · $1.20  +120 -8
+#           Opus 5 · ctx 34% · 58.4k ($1.20)  +120 -8
 #
 # Two lines, split by how often they change: where you are stays put for
 # minutes at a time, while the meters below move with every turn -- so the
@@ -53,7 +53,7 @@ if [ -n "$head_str" ]; then
     line1="$line1  ${BRANCH}(${head_str})${R}${dirty}"
 fi
 
-# ---- meters: model, context used, session/weekly usage, session cost ----
+# ---- meters: model, context used, session/weekly usage, tokens and spend ----
 # Joined with a mid-dot so they read as one group distinct from the git segment
 # above, rather than several things competing for attention. Each entry carries
 # its own color and ends by restoring $GREY, so a colored percentage can sit
@@ -85,9 +85,38 @@ five=$(j '.rate_limits.five_hour.used_percentage')
 week=$(j '.rate_limits.seven_day.used_percentage')
 [ -n "$week" ] && meters+=("$(pct_meter '7d ' "$week")")
 
+# ---- tokens in context, with the session's spend trailing in parens ----
+# The token count is what .context_window.used_percentage is a percentage of:
+# input + cache-creation + cache-read from the last exchange, i.e. how full the
+# window currently is, NOT a running session total (the payload has no such
+# field). So it reads as the absolute twin of the ctx% above -- the percentage
+# says how close the ceiling is, the count says how much is actually in there,
+# which is the number that matters when deciding what to /clear.
+#
+# Cost is subordinated to it: dimmer, in parens, because it's the thing you
+# glance at rather than act on. Either half stands alone if the other is
+# missing -- an API-key session with no cost reported still shows its tokens.
+human_tokens() { # $1 = raw count -> 842, 58.4k, 124k, 1.2M
+    awk -v n="$1" 'BEGIN{
+        if (n >= 1000000) printf "%.1fM", n/1000000
+        else if (n >= 100000) printf "%.0fk", n/1000
+        else if (n >= 1000) printf "%.1fk", n/1000
+        else printf "%d", n
+    }'
+}
+
+tok=$(j '.context_window.total_input_tokens')
 cost=$(j '.cost.total_cost_usd')
+cost_str=""
 if [ -n "$cost" ] && awk -v c="$cost" 'BEGIN{exit !(c >= 0.01)}'; then
-    meters+=("$(awk -v c="$cost" 'BEGIN{printf "$%.2f", c}')")
+    cost_str=$(awk -v c="$cost" 'BEGIN{printf "$%.2f", c}')
+fi
+if [ -n "$tok" ] && [ "$tok" != "0" ]; then
+    usage="$(human_tokens "$tok")"
+    [ -n "$cost_str" ] && usage="$usage ${SEP}(${cost_str})${GREY}"
+    meters+=("$usage")
+elif [ -n "$cost_str" ]; then
+    meters+=("$cost_str")
 fi
 
 line2=""
