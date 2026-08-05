@@ -79,6 +79,7 @@ echo "===== Installing packages ====="
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
 # asks for first.
 # grim/slurp back ~/scripts/snip, bound to mod-shift-s in dwl's config.h.
+# jq reads the GitHub release JSON in the keychain install below.
 # The remainder are scrcpy's build and runtime deps, per upstream doc/linux.md;
 # the build itself is further down.
 set +x # apt is noisy enough on its own
@@ -91,6 +92,7 @@ if command -v apt >/dev/null; then
 		grim \
 		slurp \
 		wl-clipboard \
+		jq \
 		ffmpeg \
 		libsdl3-0 \
 		libusb-1.0-0 \
@@ -130,6 +132,79 @@ if [ ! -f "$nerd_fonts/SymbolsNerdFont-Regular.ttf" ] && command -v curl >/dev/n
 		echo "  failed to fetch Symbols Nerd Font; some waybar icons will be tofu"
 	fi
 	rm -f "$nf_tar"
+fi
+set -x
+
+echo "===== Installing keychain ====="
+# Sourced by ~/.config/fish/config.fish to share one ssh-agent across logins.
+# Not the Debian package: apt only carries 2.8.5, and 3.x is a python rewrite
+# with the verb-based CLI ("keychain add", "keychain env") that the fish config
+# calls. Upstream ships it as a zipapp -- one self-contained .pyz that runs on
+# any python3 -- so installing is a download, a checksum and a chmod.
+#
+# Unlike the nerd font and codelldb above this tracks the latest release rather
+# than a pinned version, so the tag and the expected hash are both resolved at
+# run time from the GitHub API. Note what that checksum can and cannot do: the
+# .pyz and the SHA256SUMS naming it come from the same release, so this catches
+# a truncated or corrupted download, not a compromised upstream. Re-running
+# setup is how this gets updated.
+#
+# Idempotent, and cheap when there's nothing to do: the API response and
+# SHA256SUMS are both small, and the .pyz is only fetched when the installed
+# binary doesn't already hash to what the latest release publishes.
+set +x
+keychain_bin=~/.local/bin/keychain
+keychain_api=https://api.github.com/repos/danielrobbins/keychain/releases/latest
+if ! command -v python3 >/dev/null; then
+	# The zipapp's shebang is /usr/bin/env python3; without one it's inert.
+	echo "  no python3; skipping keychain install"
+elif ! command -v curl >/dev/null; then
+	echo "  no curl; skipping keychain install"
+elif ! command -v jq >/dev/null; then
+	echo "  no jq; skipping keychain install"
+elif ! kc_rel=$(curl -sfL "$keychain_api"); then
+	echo "  couldn't reach the GitHub API; leaving keychain as-is"
+else
+	# Pull the tag and the two asset URLs straight out of the release JSON
+	# rather than reconstructing them from a filename convention. Each of the
+	# three is wrapped so it yields exactly one value -- first() picks the
+	# single match, and // "" turns "no match at all" into an empty string
+	# rather than no output. Without that a release missing an asset would
+	# emit two lines instead of three and silently shift the sed reads below
+	# by one.
+	kc_meta=$(printf '%s' "$kc_rel" | jq -r '
+		[ (.tag_name // ""),
+		  (first(.assets[]? | select(.name | endswith(".pyz")) | .browser_download_url) // ""),
+		  (first(.assets[]? | select(.name == "SHA256SUMS") | .browser_download_url) // "")
+		] | .[]
+	' 2>/dev/null)
+	keychain_ver=$(echo "$kc_meta" | sed -n 1p)
+	kc_pyz_url=$(echo "$kc_meta" | sed -n 2p)
+	kc_sums_url=$(echo "$kc_meta" | sed -n 3p)
+
+	if [ -z "$keychain_ver" ] || [ -z "$kc_pyz_url" ] || [ -z "$kc_sums_url" ]; then
+		echo "  couldn't parse the latest keychain release; leaving keychain as-is"
+	elif ! keychain_sha=$(curl -sfL "$kc_sums_url" \
+		| grep -F "$(basename "$kc_pyz_url")" | cut -d' ' -f1) \
+		|| [ -z "$keychain_sha" ]; then
+		echo "  couldn't fetch the checksum for keychain $keychain_ver; leaving keychain as-is"
+	elif [ "$(sha256sum "$keychain_bin" 2>/dev/null | cut -d' ' -f1)" = "$keychain_sha" ]; then
+		echo "  keychain $keychain_ver already installed; skipping"
+	else
+		kc_tmp=$(mktemp)
+		if ! curl -sfL -o "$kc_tmp" "$kc_pyz_url"; then
+			echo "  failed to fetch keychain $keychain_ver"
+		elif [ "$(sha256sum "$kc_tmp" | cut -d' ' -f1)" != "$keychain_sha" ]; then
+			# Refuse to install what didn't arrive intact: this is the binary
+			# that ends up holding the ssh keys.
+			echo "  keychain $keychain_ver checksum MISMATCH; not installing"
+		else
+			mkdir -p ~/.local/bin
+			install -m 755 "$kc_tmp" "$keychain_bin"
+			echo "  installed: keychain $keychain_ver"
+		fi
+		rm -f "$kc_tmp"
+	fi
 fi
 set -x
 

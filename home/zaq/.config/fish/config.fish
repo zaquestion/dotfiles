@@ -142,9 +142,52 @@ if status is-interactive
         commandline -r -- $result
     end
 
-    # ssh agent; keychain reuses one agent across logins. Inert until keychain
-    # is installed -- and only id_ed25519 now, google_compute_engine is gone.
-    command -q keychain; and keychain --eval --agents ssh id_ed25519 | source
+    # ---- ssh agent ----
+    # keychain starts one ssh-agent and hands every later login the same one,
+    # so the passphrase is typed once per boot instead of once per terminal.
+    # Inert until keychain is installed -- and only id_ed25519 now,
+    # google_compute_engine is gone.
+    #
+    # keychain 3 is a python rewrite with a verb-based CLI, so this is no
+    # longer 2.x's `keychain --eval --agents ssh id_ed25519 | source`. That
+    # still works -- 3.x translates legacy invocations -- but two calls beat
+    # one --eval here, for two reasons:
+    #
+    #   --eval picks its output syntax from $SHELL, which only reads as fish
+    #   when fish is the login shell; start fish from anything else and it
+    #   emits sh syntax that `source` then chokes on. `env --shell env` is
+    #   plain KEY=value, so the syntax can't be guessed wrong.
+    #
+    #   ...and the fish syntax it would emit is `set -x -U`, i.e. universal
+    #   variables, which fish persists to ~/.config/fish/fish_variables. This
+    #   boot's socket path would outlive its agent, survive a reboot, and be
+    #   handed to every future session until some later keychain run
+    #   overwrote it. Parsing into `set -gx` keeps the agent env per-session.
+    #
+    # The key has to be tested for separately: with every requested key absent
+    # keychain refuses to start an agent and says so in red, which on a machine
+    # that simply doesn't have this key would nag at every single shell start
+    # (--ignore-missing only covers the some-missing case). Testing first also
+    # skips the python spawn entirely there, the same way fish_add_path above
+    # self-prunes.
+    #
+    # --quiet drops ssh-add's "Identity added" while leaving the passphrase
+    # prompt and real errors alone; --no-gui because dwl's Xwayland sets
+    # DISPLAY but no ssh-askpass is installed here, so a prompt without a
+    # controlling tty would die on the missing binary rather than fall back to
+    # the terminal. Costs ~0.3s per interactive start -- the python zipapp is
+    # slower to spawn than the old shell script was.
+    #
+    # With the key not yet loaded this prints "Press Enter to initialize keys"
+    # and waits: 3.x coordinates terminals so that when several start at once
+    # only the one you answer runs ssh-add, and the rest pick up the result.
+    # Pass --immediate to skip the wait and prompt for the passphrase outright.
+    if command -q keychain; and test -r $HOME/.ssh/id_ed25519
+        keychain add --quiet --no-gui id_ed25519
+        for kv in (keychain env --shell env)
+            set -gx (string split -m1 = -- $kv)
+        end
+    end
 
     mise activate fish | source
 else
