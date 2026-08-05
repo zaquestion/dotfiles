@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zaq Question <zaquestion@gmail.com>
+Subject: [PATCH] place new floating clients over the focused client
+
+dwl gives a newly mapped client whatever geometry the client itself
+reports, and a fresh xdg toplevel reports x=y=0. For tiled clients that
+does not matter -- the layout overwrites it immediately -- but a floating
+one keeps it, so every float appears in the monitor's top-left corner
+regardless of what was on screen or where the pointer was.
+
+Place it over the client that was focused at map time instead, copying
+that client's size along with its position. That makes a float read as
+something that opened "on top of what I was doing" rather than as a window
+that jumped to the corner. The immediate consumer is ~/scripts/footpager,
+the scrollback-in-nvim pager bound to ctrl+shift+[ in foot.ini: the pager
+lands exactly over the terminal whose buffer it is showing.
+
+The new client is already in fstack by this point (mapnotify inserts it
+before applying rules), so the walk skips itself and takes the next
+visible client on the same monitor. With nothing else on screen the loop
+finds no candidate and the corner placement stands.
+---
+ dwl.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/dwl.c b/dwl.c
+index 0000000..0000000 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -1977,7 +1977,7 @@
+ {
+ 	/* Called when the surface is mapped, or ready to display on-screen. */
+ 	Client *p = NULL;
+-	Client *w, *c = wl_container_of(listener, c, map);
++	Client *f, *w, *c = wl_container_of(listener, c, map);
+ 	Monitor *m;
+ 	int i;
+
+@@ -2028,6 +2028,20 @@
+ 	} else {
+ 		applyrules(c);
+ 	}
++
++	/* Drop a new floating client onto whichever client was focused when it
++	 * appeared, taking that client's size as well as its position. Without
++	 * this it lands in the monitor's top-left corner: dwl resizes it to its
++	 * own geometry, and a freshly mapped xdg toplevel reports x=y=0.
++	 * c is already in fstack by this point, hence testing f != c. */
++	if (c->isfloating) {
++		wl_list_for_each(f, &fstack, flink) {
++			if (f != c && VISIBLEON(f, c->mon)) {
++				resize(c, f->geom, 0);
++				break;
++			}
++		}
++	}
+ 	printstatus();
+
+ unset_fullscreen:

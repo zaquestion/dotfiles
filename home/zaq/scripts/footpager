@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# footpager opens terminal text arriving on stdin in nvim, in a new foot
+# window. It's the replacement for tmux's copy-mode (C-b [): rather than have
+# foot grow its own vim-flavored selection mode, the buffer is handed to the
+# real vim, where search, motions, visual select and yank already work the way
+# they should.
+#
+# ~/.config/foot/foot.ini binds it to pipe-scrollback, which hands the text
+# over on stdin. That text has to be slurped into a file here, before the
+# nested foot starts: the nested foot gives nvim a fresh pty for stdin, so an
+# `nvim -` inside it would read the keyboard, not the pipe.
+
+set -euo pipefail
+
+# foot is a child of dwl, not of a shell, so its PATH is the bare session one
+# (/usr/{local/,}{s,}bin) -- none of what config.fish builds. A plain `nvim`
+# here isn't found, and the nested foot then exits before drawing a window, so
+# the keybinding looks dead. config.fish points EDITOR at the mise shim for the
+# same versioned-path reason; EDITOR isn't in this environment either, hence
+# naming the shim outright.
+editor=${EDITOR:-$HOME/.local/share/mise/shims/nvim}
+
+f=$(mktemp -t footpager.XXXXXX)
+# EXIT rather than a trailing rm: foot exiting non-zero would trip set -e and
+# leak the file.
+trap 'rm -f "$f"' EXIT
+
+# The command substitution eats trailing newlines. The terminal grid is a fixed
+# height, so a half-full screen arrives padded with blank lines that aren't
+# part of the output; dropping them leaves the cursor on the last real line.
+printf '%s\n' "$(cat)" >"$f"
+
+# -R is read-only: this is a throwaway copy, and a stray keystroke shouldn't
+# start editing it. -n skips the swapfile. Bare + opens on the last line, where
+# the interesting output is -- the same place copy-mode would have dropped you.
+foot --app-id=footpager --title=scrollback "$editor" -R -n + "$f"

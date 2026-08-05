@@ -15,6 +15,7 @@ tree at `home/zaq/projects/dwl/config.h` and `setup.sh` symlinks it into place.
 | 0002 | `pertag.patch` | upstream [pertag](https://codeberg.org/dwl/dwl-patches/wiki/pertag) -- per-tag layout, mfact, nmaster |
 | 0003 | `publish-focused-client-pid.patch` | local -- see below |
 | 0004 | `mark-floating-client-in-layout-symbol.patch` | local -- see below |
+| 0005 | `place-new-floating-clients-over-the-focused-client.patch` | local -- see below |
 
 Not tracked: the local `config.mk` uncomments `XWAYLAND`/`XLIBS` to build X11
 support. Nothing currently uses it (no Xwayland clients), so it's left out of the
@@ -34,6 +35,16 @@ floating, so waybar shows `[]=~` instead of `[]=`. dwl already publishes the
 floating state as its own ipc event, but waybar 0.12's `dwl/window` module
 ignores it -- `{layout}` (fed by the layout_symbol event) is the only hook we
 have. Only the ipc copy is decorated; `monitor->ltsymbol` is untouched.
+
+### 0005-place-new-floating-clients-over-the-focused-client.patch
+
+Places a newly mapped floating client over whichever client was focused at the
+time, copying its size as well as its position. dwl otherwise honours the
+geometry the client reports for itself, and a fresh xdg toplevel reports
+`x=y=0`, so every float opens in the monitor's top-left corner. Written for
+`~/scripts/footpager` (the scrollback pager on `ctrl+shift+[` in `foot.ini`),
+which should appear over the terminal whose buffer it is showing, but it
+applies to any float. With nothing else on screen the corner placement stands.
 
 ## Applying
 
@@ -58,8 +69,8 @@ fully-applied 0001 reports as *not* applied. Check the tree as a whole instead:
 
     git -C ~/projects/dwl diff --stat
 
-The two local patches (0003, 0004) are the exception -- nothing stacks on them
-and they touch disjoint parts of `dwl.c`, so either can be dropped and re-added
+The local patches (0003, 0004, 0005) are the exception -- nothing stacks on them
+and they touch disjoint parts of `dwl.c`, so any can be dropped and re-added
 on its own:
 
     git apply --reverse ~/projects/dotfiles/patches/dwl/0004-mark-floating-client-in-layout-symbol.patch
