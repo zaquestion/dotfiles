@@ -27,6 +27,220 @@
     font-family: FontAwesome, "Weather Icons", "Symbols Nerd Font", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ---------------------------------------------------------------------------
+ * Quiet chips
+ *
+ * The packaged theme gives every module its own saturated background -- green
+ * cpu, purple memory, yellow pulseaudio, blue network/tray, white battery --
+ * so the right half of the bar is a row of competing colour blocks and nothing
+ * in it stands out because everything does. This palette inverts that: one
+ * near-black chip shape shared by every module, colour carried only by the
+ * text, and exactly one filled chip (the clock) as the anchor the eye lands on.
+ *
+ * The hues are the violet family the rest of the desktop already uses --
+ * #a78bfa is dwl's focuscolor and the tag accent below -- with pink #f472b6 for
+ * the anchor and rose #fb7185 as the single "something is wrong" colour.
+ * ------------------------------------------------------------------------- */
+
+/* Bar chrome. The default's 3px bottom border is a desaturated blue-grey that
+ * reads as a different palette entirely; keeping the shape but painting it the
+ * chip colour turns it into a seam rather than a rule. */
+window#waybar {
+    background-color: #16121d;
+    color: #d6d0e0;
+    border-bottom: 3px solid #241d30;
+}
+
+/* The chip itself. Everything in modules-right shares this, so the only thing
+ * that varies module to module is the foreground colour set further down.
+ *
+ * The 1px horizontal margin plus config.jsonc's `spacing: 1` leaves ~3px
+ * between chips -- enough to read as separate objects, tight enough that the
+ * row still reads as one group. custom/voxtype takes its padding from here
+ * too, which is why its own rule below no longer sets any. */
+#custom-voxtype,
+#mpd,
+#idle_inhibitor,
+#pulseaudio,
+#network,
+#power-profiles-daemon,
+#cpu,
+#memory,
+#temperature,
+#backlight,
+#keyboard-state,
+#battery,
+#clock,
+#tray,
+#custom-power {
+    background-color: #241d30;
+    border-radius: 3px;
+    margin: 3px 1px;
+    padding: 0 10px;
+}
+
+/* custom/media lives in modules-left, not the chip row, but the default paints
+ * it mint green (#66cc99 on #2a5c45) and it only appears when a player is
+ * running -- i.e. it would show up mid-session as the one leftover of the old
+ * theme. Same chip, neutral text. */
+#custom-media {
+    background-color: #241d30;
+    color: #b9b0cc;
+    border-radius: 3px;
+    margin: 3px 1px;
+    padding: 0 10px;
+}
+
+/* keyboard-state's labels carry their own `padding: 0 5px` from the default
+ * sheet, so the module's own padding has to be halved to land at the same 10px
+ * of chip edge as everything else. The default also sets a 0 5px margin here
+ * that the group rule above already replaces. */
+#keyboard-state {
+    color: #b9b0cc;
+    padding: 0 5px;
+}
+
+#pulseaudio {
+    color: #e879f9;
+}
+
+/* Overrides the default's #a37800 hover, which would flash an ochre block over
+ * the chip on the way to pavucontrol. */
+#pulseaudio:hover {
+    background-color: #241d30;
+}
+
+#pulseaudio.muted,
+#pulseaudio.source-muted {
+    background-color: #241d30;
+    color: #e879f9;
+}
+
+#network {
+    color: #8da2fb;
+}
+
+#network.disconnected {
+    background-color: #241d30;
+    color: #fb7185;
+}
+
+#cpu {
+    background-color: #241d30;
+    color: #a78bfa;
+}
+
+#memory {
+    color: #c4b5fd;
+}
+
+#temperature {
+    color: #fb7185;
+}
+
+/* Same rose as the non-critical state -- the temperature module is already the
+ * only thing in the bar wearing this colour, so crossing the threshold doesn't
+ * need a new one, just more weight. */
+#temperature.critical {
+    background-color: #241d30;
+    color: #fb7185;
+    font-weight: bold;
+}
+
+#backlight {
+    background-color: #241d30;
+    color: #e9d5ff;
+}
+
+/* Green, but desaturated to sit at the same visual weight as the violets --
+ * a full-strength green here would read as an alert rather than "fine". */
+#battery {
+    background-color: #241d30;
+    color: #9fd3ab;
+}
+
+#battery.warning:not(.charging) {
+    color: #e3cd8a;
+}
+
+/* The default's rule is #battery.critical:not(.charging), which is a full class
+ * more specific than a bare #battery.critical -- matching that selector exactly
+ * is the only way to win. It also runs a `blink` animation that flips the
+ * background to white every half second; the shorthand below replaces the whole
+ * animation, opacity-pulsing the chip instead of strobing it. */
+#battery.critical:not(.charging) {
+    background-color: #241d30;
+    color: #fb7185;
+    animation: chip-pulse 1.2s ease-in-out infinite alternate;
+}
+
+#battery.charging,
+#battery.plugged {
+    background-color: #241d30;
+    color: #9fd3ab;
+}
+
+/* The one filled chip in the bar. Everything else is text on #241d30, so the
+ * clock reads as the fixed point you glance at without hunting -- and #320a1e
+ * on #f472b6 is 8.4:1, well clear of the 4.5:1 body-text floor at bar size. */
+#clock {
+    background-color: #f472b6;
+    color: #320a1e;
+    font-weight: bold;
+}
+
+/* Deliberately dim when inactive: an idle inhibitor that is off is the normal
+ * state and shouldn't draw the eye. Activated it borrows the clock's pink,
+ * because "your screen will not blank" is worth noticing. */
+#idle_inhibitor {
+    color: #675f75;
+}
+
+#idle_inhibitor.activated {
+    background-color: #241d30;
+    color: #f472b6;
+}
+
+/* Neutral group -- status the bar reports but rarely needs you to act on. The
+ * per-state rules exist only to unpick the default's coloured backgrounds
+ * (red performance, blue balanced, green power-saver; the mpd states likewise);
+ * the profile and playback icons already distinguish them. */
+#power-profiles-daemon,
+#tray,
+#mpd,
+#keyboard-state {
+    color: #b9b0cc;
+}
+
+#power-profiles-daemon {
+    padding-right: 10px;
+}
+
+#power-profiles-daemon.performance,
+#power-profiles-daemon.balanced,
+#power-profiles-daemon.power-saver {
+    background-color: #241d30;
+    color: #b9b0cc;
+}
+
+#mpd.disconnected,
+#mpd.stopped,
+#mpd.paused {
+    background-color: #241d30;
+    color: #b9b0cc;
+}
+
+/* Kept as a real signal, just in the palette's rose rather than the default's
+ * #eb4d4b -- this is the same "wrong" colour as temperature and battery. */
+#tray > .needs-attention {
+    background-color: #fb7185;
+}
+
+/* The power menu -- rose because the one thing behind it is shutdown. */
+#custom-power {
+    color: #fb7185;
+}
+
 /* The packaged stylesheet only styles #workspaces (sway/river/hyprland) and
  * never #tags, so dwl's tag buttons inherit the GTK theme's default button
  * colors -- unreadable grey on grey. These mirror the #workspaces rules so the
@@ -81,8 +295,10 @@
     box-shadow: inset 0 -3px #222222;
 }
 
+/* Rose rather than the default sheet's #eb4d4b -- one "attention" colour
+ * across the whole bar, shared with temperature, battery and the tray. */
 #tags button.urgent {
-    background-color: #eb4d4b;
+    background-color: #fb7185;
 }
 
 /* Dictation indicator (custom/voxtype). The module emits a class per state --
@@ -91,20 +307,22 @@
  * since with a toggle binding there is nothing else telling you the mic is
  * open, so it pulses rather than just sitting there red.
  *
- * The packaged stylesheet has no @keyframes of its own, so this name is free. */
-#custom-voxtype {
-    padding: 0 8px;
-}
+ * The packaged stylesheet has no @keyframes of its own, so these names are
+ * free. Padding and background come from the chip rule above. */
 
-/* Idle sits in the bar permanently, so it stays understated -- but 0.5 was far
- * enough into the background that it read as decoration rather than a control.
- * 0.75 is findable without competing with the coloured modules. */
+/* Idle sits in the bar permanently, so it stays understated -- the same
+ * neutral as the tray and the power profile, since an idle mic is status, not
+ * a control asking to be used. (Was a 0.75-alpha white, which over the chip
+ * background muddied into a colour that matched nothing else.) */
 #custom-voxtype.idle {
-    color: rgba(255, 255, 255, 0.75);
+    color: #b9b0cc;
 }
 
+/* Pink rather than the old #eb4d4b: the mic being open is not an error, and
+ * this is the same colour the clock chip is filled with -- the pulse is what
+ * makes it read as live, not the hue. */
 #custom-voxtype.recording {
-    color: #eb4d4b;
+    color: #f472b6;
     animation: voxtype-pulse 1.2s ease-in-out infinite alternate;
 }
 
@@ -113,7 +331,7 @@
  * all and the module looked inert for the entire dictation. Same treatment as
  * recording, because to the person talking it is the same thing. */
 #custom-voxtype.streaming {
-    color: #eb4d4b;
+    color: #f472b6;
     animation: voxtype-pulse 1.2s ease-in-out infinite alternate;
 }
 
@@ -129,5 +347,14 @@
 @keyframes voxtype-pulse {
     to {
         opacity: 0.35;
+    }
+}
+
+/* Replaces the default `blink` for critical battery, which alternated the chip
+ * to solid white. Same curve as the voxtype pulse but shallower -- this one
+ * runs until you plug in, so it has to stay legible the whole time. */
+@keyframes chip-pulse {
+    to {
+        opacity: 0.55;
     }
 }
