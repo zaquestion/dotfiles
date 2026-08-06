@@ -1,0 +1,27 @@
+# swaylock reads this in place of the command line flags, one long-option per
+# line with the leading dashes stripped. Bound to mod-shift-l in dwl's config.h.
+
+# Screen behind the indicator. swaylock takes RGB without the leading '#'.
+color=5b21b6
+
+# Indicator ring, tinted to sit on the purple rather than the default grey.
+inside-color=00000000
+ring-color=7c3aed
+key-hl-color=c4b5fd
+text-color=ede9fe
+
+inside-clear-color=00000000
+ring-clear-color=c4b5fd
+text-clear-color=ede9fe
+
+inside-ver-color=00000000
+ring-ver-color=a78bfa
+text-ver-color=ede9fe
+
+inside-wrong-color=00000000
+ring-wrong-color=ff5555
+text-wrong-color=ede9fe
+
+# The ticks between keypress highlight segments; transparent keeps the ring
+# reading as one solid arc.
+separator-color=00000000
