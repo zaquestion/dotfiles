@@ -53,9 +53,24 @@
     box-shadow: inset 0 -3px rgba(255, 255, 255, 0.5);
 }
 
+/* The same violet-400 as dwl's focuscolor in ~/projects/dwl/config.h, so the
+ * focused tag and the focused window's border are one colour -- the bar says
+ * which tag, the border says which window, and they now agree.
+ *
+ * The text and underline flip to dark here, against #ffffff everywhere else in
+ * #tags. That is forced by the colour, not a preference: violet-400 is light
+ * (relative luminance 0.34), so white on it is 2.7:1 -- under the 4.5:1 that
+ * body text wants and under even the 3:1 for large text, which for a single
+ * digit at bar size is a number you squint at. #222222 on the same background
+ * is 5.8:1, and matches dwl's rootcolor.
+ *
+ * The alternative was keeping white text and dropping to violet-600 #7c3aed
+ * (swaylock's ring-color, 5.7:1 with white), but that is a different colour
+ * from the border, which is the entire point of this rule. */
 #tags button.focused {
-    background-color: #64727D;
-    box-shadow: inset 0 -3px #ffffff;
+    background-color: #a78bfa;
+    color: #222222;
+    box-shadow: inset 0 -3px #222222;
 }
 
 #tags button.urgent {
