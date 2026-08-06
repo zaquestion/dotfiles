@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zaq Question <zaquestion@gmail.com>
+Subject: [PATCH] recolour the focused border while dictating
+
+Paint the focused client's border with `dictatecolor` while the mic is open,
+so the "you are being recorded" signal sits around the window the dictated
+text is about to land in, and not only up in the bar. SIGUSR1 turns it on,
+SIGUSR2 turns it off; `~/scripts/dictate-indicator` follows voxtype's state
+stream and sends them.
+
+Two signals rather than one toggle on purpose. The sender is not the only
+thing that ends a recording -- `~/scripts/dictate` has a silence watchdog and
+voxtype has `audio.max_duration_secs` -- so a toggle would invert on any
+transition the sender didn't see and then stay wrong for the rest of the
+session. Level, not edge: whatever the daemon last reported is what is drawn.
+
+Registered with wl_event_loop_add_signal rather than appended to the sigaction
+list at the top of setup(). That list feeds handlesig, which is a genuine
+async signal handler and restricts itself to waitpid/quit accordingly;
+recolouring a border mutates the scene graph, which is not async-signal-safe.
+wl_event_loop_add_signal blocks the signal and delivers it through a signalfd
+the event loop polls, so the callback runs as an ordinary event loop dispatch
+where scene mutation is fine.
+
+The signal handler repaints the current focus directly because focus does not
+change when dictation starts -- there is no focusclient() call to piggyback
+on. The ternary added to focusclient() is what covers the other direction:
+switching windows mid-recording keeps the new border red.
+---
+ config.def.h |  1 +
+ dwl.c        | 41 ++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/config.def.h b/config.def.h
+index 0000000..0000000 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -11,6 +11,7 @@ static const float rootcolor[]             = COLOR(0x222222ff);
+ static const float bordercolor[]           = COLOR(0x444444ff);
+ static const float focuscolor[]            = COLOR(0x005577ff);
+ static const float urgentcolor[]           = COLOR(0xff0000ff);
++static const float dictatecolor[]          = COLOR(0xeb4d4bff); /* focused border while the mic is open */
+ /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
+ static const float fullscreen_bg[]         = {0.1f, 0.1f, 0.1f, 1.0f}; /* You can also use glsl colors */
+ 
+diff --git a/dwl.c b/dwl.c
+index 0000000..0000000 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -295,6 +295,7 @@ static void destroypointerconstraint(struct wl_listener *listener, void *data);
+ static void destroysessionlock(struct wl_listener *listener, void *data);
+ static void destroysessionmgr(struct wl_listener *listener, void *data);
+ static void destroykeyboardgroup(struct wl_listener *listener, void *data);
++static int dictationsig(int signo, void *data);
+ static Monitor *dirtomon(enum wlr_direction dir);
+ static void dwl_ipc_manager_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id);
+ static void dwl_ipc_manager_destroy(struct wl_resource *resource);
+@@ -383,6 +384,7 @@ static void zoom(const Arg *arg);
+ /* variables */
+ static const char broken[] = "broken";
+ static pid_t child_pid = -1;
++static int dictating;
+ static int locked;
+ static void *exclusive_focus;
+ static struct wl_display *dpy;
+@@ -1374,6 +1376,34 @@ destroykeyboardgroup(struct wl_listener *listener, void *data)
+ 	free(group);
+ }
+ 
++int
++dictationsig(int signo, void *data)
++{
++	/* SIGUSR1 = the mic is open, SIGUSR2 = it is not. Sent by
++	 * ~/scripts/dictate-indicator, which follows voxtype's state stream.
++	 *
++	 * Two signals rather than one toggle because the sender is not the only
++	 * thing that can end a recording -- dictate's silence watchdog and
++	 * voxtype's own max_duration_secs both do -- so a toggle would invert on
++	 * any transition this never saw and then stay wrong. Level, not edge. */
++	Client *sel;
++
++	dictating = signo == SIGUSR1;
++
++	/* Repaint whatever is focused now; focus itself hasn't changed, so there is
++	 * no focusclient() call to piggyback on. The guard mirrors the one there:
++	 * under an exclusive focus or a live drag the border isn't ours to touch,
++	 * and focusclient()'s ternary picks the colour up on the next focus change
++	 * regardless -- which is also what keeps the border red if you switch
++	 * windows mid-recording. */
++	if (!selmon || exclusive_focus || seat->drag)
++		return 0;
++	if ((sel = focustop(selmon)))
++		client_set_border_color(sel, dictating ? dictatecolor : focuscolor);
++
++	return 0;
++}
++
+ Monitor *
+ dirtomon(enum wlr_direction dir)
+ {
+@@ -1660,7 +1690,7 @@ focusclient(Client *c, int lift)
+ 		/* Don't change border color if there is an exclusive focus or we are
+ 		 * handling a drag operation */
+ 		if (!exclusive_focus && !seat->drag)
+-			client_set_border_color(c, focuscolor);
++			client_set_border_color(c, dictating ? dictatecolor : focuscolor);
+ 	}
+ 
+ 	/* Deactivate old client if focus is changing */
+@@ -2714,6 +2744,15 @@ setup(void)
+ 	dpy = wl_display_create();
+ 	event_loop = wl_display_get_event_loop(dpy);
+ 
++	/* Deliberately not in the sigaction list at the top of this function: that
++	 * one feeds handlesig, which is a genuine async signal handler and keeps to
++	 * waitpid/quit accordingly. Recolouring a border mutates the scene graph,
++	 * which is not async-signal-safe. wl_event_loop_add_signal blocks the
++	 * signal and delivers it through a signalfd the event loop polls, so
++	 * dictationsig runs as an ordinary dispatch where that is fine. */
++	wl_event_loop_add_signal(event_loop, SIGUSR1, dictationsig, NULL);
++	wl_event_loop_add_signal(event_loop, SIGUSR2, dictationsig, NULL);
++
+ 	/* The backend is a wlroots feature which abstracts the underlying input and
+ 	 * output hardware. The autocreate option will choose the most suitable
+ 	 * backend based on the current environment, such as opening an X11 window
+-- 
+2.43.0

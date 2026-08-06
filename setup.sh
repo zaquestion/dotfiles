@@ -82,6 +82,10 @@ echo "===== Installing packages ====="
 # swaylock is the screen locker, bound to mod-shift-l; it reads its colors from
 # ~/.config/swaylock/config.
 # jq reads the GitHub release JSON in the keychain install below.
+# wtype is how voxtype gets dictated text into the focused client -- it drives
+# the virtual-keyboard protocol, which dwl supports natively, so unlike ydotool
+# it needs no uinput access and no root. cmake, libasound2-dev and libclang-dev
+# are voxtype's own build deps (bindgen wants libclang); the build is below.
 # The remainder are scrcpy's build and runtime deps, per upstream doc/linux.md;
 # the build itself is further down.
 set +x # apt is noisy enough on its own
@@ -95,6 +99,10 @@ if command -v apt >/dev/null; then
 		slurp \
 		swaylock \
 		wl-clipboard \
+		wtype \
+		cmake \
+		libasound2-dev \
+		libclang-dev \
 		jq \
 		ffmpeg \
 		libsdl3-0 \
@@ -290,6 +298,42 @@ else
 		echo "  installed: $(scrcpy --version 2>/dev/null | head -1)"
 	else
 		echo "  scrcpy build failed; see $scrcpy_src"
+	fi
+fi
+set -x
+
+echo "===== Installing voxtype ====="
+# Push-to-talk dictation, bound to mod-slash in dwl's config.h. Built from source
+# rather than installed from the .deb: upstream's aarch64 binaries are marked
+# experimental, and the .deb wouldn't carry the parakeet engine anyway -- that
+# is a compile-time cargo feature, and it's the whole reason for choosing
+# voxtype over a whisper-only setup. See ~/.config/voxtype/config.toml for why
+# parakeet and not whisper.
+#
+# The build is slow (ONNX Runtime and a lot of Rust) but idempotent: skipped
+# once the binary is on PATH. To update after a new release:
+#   cd ~/projects/voxtype && git pull && cargo build --release --features parakeet
+#   install -m 755 target/release/voxtype ~/.local/bin/voxtype
+set +x # cargo is noisy enough on its own
+voxtype_src=~/projects/voxtype
+if command -v voxtype >/dev/null; then
+	echo "  voxtype already installed; skipping"
+elif ! command -v cargo >/dev/null; then
+	echo "  no cargo; skipping voxtype build (mise install provisions rust)"
+else
+	test -d "$voxtype_src/.git" || git clone https://github.com/peteonrails/voxtype "$voxtype_src"
+	# --features parakeet pulls in parakeet-rs and its ONNX Runtime. No GPU
+	# feature: the parakeet EPs upstream ships are CUDA/TensorRT/MIGraphX/
+	# CoreML, none of which mean anything on an Apple GPU under Linux, and the
+	# model is fast enough on the CPU cores for dictation-length clips.
+	if (cd "$voxtype_src" && cargo build --release --features parakeet); then
+		mkdir -p ~/.local/bin
+		install -m 755 "$voxtype_src/target/release/voxtype" ~/.local/bin/voxtype
+		echo "  installed: $(~/.local/bin/voxtype --version 2>/dev/null | head -1)"
+		echo "  -> fetch the model (~700MB) with:"
+		echo "     voxtype setup --download --model parakeet-tdt-0.6b-v3"
+	else
+		echo "  voxtype build failed; see $voxtype_src"
 	fi
 fi
 set -x

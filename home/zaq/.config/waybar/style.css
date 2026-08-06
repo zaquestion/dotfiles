@@ -61,3 +61,50 @@
 #tags button.urgent {
     background-color: #eb4d4b;
 }
+
+/* Dictation indicator (custom/voxtype). The module emits a class per state --
+ * idle, recording, transcribing, stopped -- and these colour it accordingly.
+ * Recording is the one that has to be unmissable from the corner of an eye,
+ * since with a toggle binding there is nothing else telling you the mic is
+ * open, so it pulses rather than just sitting there red.
+ *
+ * The packaged stylesheet has no @keyframes of its own, so this name is free. */
+#custom-voxtype {
+    padding: 0 8px;
+}
+
+/* Idle sits in the bar permanently, so it stays understated -- but 0.5 was far
+ * enough into the background that it read as decoration rather than a control.
+ * 0.75 is findable without competing with the coloured modules. */
+#custom-voxtype.idle {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+#custom-voxtype.recording {
+    color: #eb4d4b;
+    animation: voxtype-pulse 1.2s ease-in-out infinite alternate;
+}
+
+/* The state the streaming pipeline actually reports -- it writes "streaming",
+ * not "recording", so without this rule the mic-is-open state got no colour at
+ * all and the module looked inert for the entire dictation. Same treatment as
+ * recording, because to the person talking it is the same thing. */
+#custom-voxtype.streaming {
+    color: #eb4d4b;
+    animation: voxtype-pulse 1.2s ease-in-out infinite alternate;
+}
+
+#custom-voxtype.transcribing {
+    color: #f6e58d;
+}
+
+/* Daemon not running -- mod-slash will do nothing, so this is worth seeing. */
+#custom-voxtype.stopped {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+@keyframes voxtype-pulse {
+    to {
+        opacity: 0.35;
+    }
+}

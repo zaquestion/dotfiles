@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# Paints "the mic is open" onto the two places waybar can't reach: dwl's
+# focused-window border, and the text caret in every open foot window. Started
+# by ~/scripts/dwlstart, alongside the voxtype daemon it follows.
+#
+# The point is that the bar is in the wrong place. When you dictate you are
+# looking at the window the text is about to land in, not at the top-right
+# corner, so a toggle-style push-to-talk can sit there with the mic open and
+# the only indicator is somewhere you aren't looking. These two are.
+#
+# Why a follower rather than doing this inside ~/scripts/dictate: that script
+# only sees the keypresses, and a keypress is not what ends a recording. Its
+# own silence watchdog ends most of them, voxtype's audio.max_duration_secs
+# backstops the rest, and the transcribing->idle transition has no press at all
+# -- so anything keyed off the binding drifts out of step with the daemon and
+# then stays wrong. `voxtype status --follow` emits a line per state change and
+# is the same stream waybar's custom/voxtype module already consumes.
+
+# Note the missing -e. This is a long-running follower, not a one-shot: a foot
+# window closing between listing the ptys and writing to one is completely
+# ordinary, and it must not take the indicator down for the rest of the
+# session. Failures are swallowed deliberately, one call at a time, below.
+set -uo pipefail
+
+voxtype=~/.local/bin/voxtype
+
+# The same red as #custom-voxtype.recording in ~/.config/waybar/style.css and
+# as dictatecolor in dwl's config.h, so this is one colour appearing in three
+# places rather than three indicators that happen to fire together.
+#
+# OSC 12 sets the terminal's cursor colour; OSC 112 resets it to whatever the
+# config says, which is why foot.ini needs no [cursor] section for this to put
+# things back. Both are ANSI-C quoted rather than assembled with printf %b so
+# the escapes are expanded once, here, and the write below is a plain %s.
+caret_on=$'\e]12;#eb4d4b\a'
+caret_off=$'\e]112\a'
+
+# Whether the dwl we are looking at is one that understands these signals.
+#
+# This guard is not defensive padding, it is the difference between a working
+# session and no session. The default disposition of SIGUSR1 is *terminate*, so
+# sending one to an unpatched dwl kills the compositor outright -- and since
+# dwlstart runs this at login, a dotfiles update that lands ahead of a dwl
+# rebuild would otherwise turn every login into an instant logout. The build is
+# deliberately manual (see patches/dwl/README.md), so that ordering is not a
+# hypothetical.
+#
+# SigBlk in /proc/PID/status is a 64-bit hex mask of the signals the process has
+# blocked. wl_event_loop_add_signal works by blocking the signal and reading it
+# off a signalfd, so both bits being set is exactly the evidence that patch 0007
+# is live in the running binary -- not a version string, the actual mechanism.
+# Bit 9 is SIGUSR1 (signal 10), bit 11 is SIGUSR2 (signal 12).
+dwl_takes_signals() {
+	local blk
+	blk=$(awk '/^SigBlk:/ {print $2}' "/proc/$1/status" 2>/dev/null) || return 1
+	[[ -n $blk ]] || return 1
+	(( (0x$blk >> 9 & 1) && (0x$blk >> 11 & 1) ))
+}
+
+# Looked up by name on every signal rather than cached at startup, and pgrep
+# rather than $PPID, because this is also runnable by hand for testing, where
+# the parent is a shell and not the compositor. Rechecking also means a dwl
+# restarted mid-session is re-evaluated rather than assumed.
+signal_dwl() {
+	local sig=$1 pid
+	for pid in $(pgrep -x dwl); do
+		dwl_takes_signals "$pid" && kill "-$sig" "$pid" 2>/dev/null
+	done
+	return 0
+}
+
+# Every foot window is its own process here (no --server / footclient), and the
+# shell foot spawns is its direct child, so the child's controlling terminal is
+# the pty for that window. Writing an escape sequence to the pty *slave* sends
+# it toward the master, which is to say toward foot, which handles it exactly
+# as if the shell had printed it.
+#
+# `ps -o tty=` prints "?" for anything without a controlling terminal, which
+# the pattern below drops.
+foot_ptys() {
+	local foot
+	for foot in $(pgrep -x foot); do
+		ps -o tty= --ppid "$foot" 2>/dev/null
+	done | sed -n 's|^[[:space:]]*\(pts/[0-9]\{1,\}\)[[:space:]]*$|/dev/\1|p' | sort -u
+}
+
+# All foot windows, not just the focused one. The focused window is knowable
+# ($XDG_RUNTIME_DIR/dwl/focused.pid, from patches/dwl/0003), but focus can move
+# mid-recording and then the red caret is stranded on the window you left.
+# Painting every window means stop is unconditional and there is no stale state
+# to reason about. A foot window opened *during* a recording gets the default
+# caret until the next transition; not worth polling for.
+paint_carets() {
+	local seq=$1 pty
+	while read -r pty; do
+		printf '%s' "$seq" >"$pty" 2>/dev/null || true
+	done < <(foot_ptys)
+}
+
+off() {
+	signal_dwl USR2
+	paint_carets "$caret_off"
+}
+
+# Clears up on the way out however we got here, so stopping the follower (or
+# the session) never leaves a red border and a red caret behind with nothing
+# left running to turn them off. SIGKILL is the one case this can't cover.
+#
+# INT/TERM are a separate trap that exits rather than sharing the EXIT one. A
+# trap handler returns to where it was interrupted, so `trap off EXIT INT TERM`
+# would clear the colours on SIGTERM and then carry straight on looping --
+# leaving an unkillable-by-TERM follower that the session teardown can't stop.
+# Exiting from the handler is what fires the EXIT trap and actually ends it.
+trap off EXIT
+trap 'exit 0' INT TERM
+
+# Same guard as dwlstart's: a machine that hasn't built voxtype yet should get
+# a working session rather than a reconnect loop spinning on a missing binary.
+[[ -x $voxtype ]] || exit 0
+
+while :; do
+	# Clear first, and say so, because `state` outlives an iteration. On the
+	# first pass this drops a stale border/caret left by a run that was killed
+	# outright; on a reconnect the daemon has just died, so the mic is
+	# definitionally closed. Without resetting the variable too, a reconnect
+	# that happened mid-recording would leave state=on against cleared colours
+	# and then swallow the next start as "no change".
+	state=off
+	off
+
+	# --follow holds the pipe open and emits one JSON object per state change
+	# (and nothing at all until the first one, which is why the clear above is
+	# the only thing establishing the initial state). jq --unbuffered because
+	# the default block buffering would sit on a state change until enough
+	# output accumulated to flush -- for an indicator emitting a few dozen
+	# bytes a minute, indistinguishable from it not working.
+	#
+	# Redirected in rather than piped into so the loop body runs in this shell:
+	# as the right-hand side of a pipeline it would be a subshell, and `state`
+	# would silently reset to off on every reconnect.
+	while IFS= read -r class; do
+		# Two names for "the mic is open": the batch pipeline reports
+		# "recording" and the cache-aware one reports "streaming". Matching
+		# only the first leaves the indicator inert for entire dictations
+		# under streaming -- the same bug style.css had.
+		case "$class" in
+		recording | streaming) want=on ;;
+		*) want=off ;;
+		esac
+
+		# Edge-trigger the writes. Most transitions don't cross this boundary
+		# (recording -> streaming is two lines, both "on"; transcribing ->
+		# idle two lines, both "off"), and there is no reason to walk /proc
+		# and fan out writes to every open terminal for a state that held.
+		[[ $state == "$want" ]] && continue
+		state=$want
+
+		if [[ $state == on ]]; then
+			signal_dwl USR1
+			paint_carets "$caret_on"
+		else
+			off
+		fi
+	done < <("$voxtype" status --follow --format json 2>/dev/null \
+		| jq --unbuffered -r '.class' 2>/dev/null)
+
+	# Reached only when the daemon exits or the pipe breaks. Reconnect rather
+	# than give up: voxtype gets restarted by hand often enough that a follower
+	# which dies with it would quietly stop working for the rest of the login.
+	sleep 2
+done

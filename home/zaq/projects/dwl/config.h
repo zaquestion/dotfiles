@@ -11,6 +11,13 @@ static const float rootcolor[]             = COLOR(0x222222ff);
 static const float bordercolor[]           = COLOR(0x444444ff);
 static const float focuscolor[]            = COLOR(0x005577ff);
 static const float urgentcolor[]           = COLOR(0xff0000ff);
+/* The focused border while the mic is open (patches/dwl/0007). Same red as
+ * #custom-voxtype.recording in ~/.config/waybar/style.css and as the foot
+ * caret in ~/scripts/dictate-indicator, so "you are being recorded" is one
+ * colour in three places rather than three colours. Distinct from urgentcolor
+ * above, which is pure red -- these two never appear on the same border (that
+ * one is for unfocused clients), but they do appear on the same screen. */
+static const float dictatecolor[]          = COLOR(0xeb4d4bff);
 /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.0f, 0.0f, 0.0f, 1.0f}; /* You can also use glsl colors */
 
@@ -125,6 +132,13 @@ static const char *snipcmd[] = { "/home/zaq/scripts/snip", NULL };
 /* colors come from ~/.config/swaylock/config, not from here */
 static const char *lockcmd[] = { "swaylock", NULL };
 
+/* Dictation, toggled with mod-slash: press once to start talking, press again
+ * to transcribe -- or just stop talking, the script gives up after 10s of
+ * silence. It wraps `voxtype record toggle` because that silence watchdog is
+ * not something voxtype does on its own. Engine, model and mic live in
+ * ~/.config/voxtype/config.toml; the daemon is started by ~/scripts/dwlstart. */
+static const char *dictatecmd[] = { "/home/zaq/scripts/dictate", NULL };
+
 static const char *brightup[] = { "/usr/bin/brightnessctl", "set", "5%+", NULL };
 static const char *brightdown[] = { "/usr/bin/brightnessctl", "set", "5%-", NULL };
 
@@ -148,6 +162,7 @@ static const Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,           killclient,       {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_S,           spawn,            {.v = snipcmd} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_L,           spawn,            {.v = lockcmd} },
+	{ MODKEY,                    XKB_KEY_slash,       spawn,            {.v = dictatecmd} },
 	{ MODKEY,                    XKB_KEY_t,           setlayout,        {.v = &layouts[0]} },
 	{ MODKEY,                    XKB_KEY_f,           setlayout,        {.v = &layouts[1]} },
 	{ MODKEY,                    XKB_KEY_m,           setlayout,        {.v = &layouts[2]} },

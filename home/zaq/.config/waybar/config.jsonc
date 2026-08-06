@@ -15,6 +15,7 @@
         "dwl/window"
     ],
     "modules-right": [
+        "custom/voxtype",
         "mpd",
         "idle_inhibitor",
         "pulseaudio",
@@ -170,6 +171,27 @@
             "default": ["", "", ""]
         },
         "on-click": "pavucontrol"
+    },
+    // Dictation state, so a toggle-style push-to-talk has something to say
+    // whether it's listening. Without this the only feedback that mod-slash
+    // armed the mic is the text showing up (or not) some seconds later.
+    //
+    // --follow makes voxtype hold the pipe open and emit a line per state
+    // change, so this is event-driven -- no "interval" key, nothing polling.
+    // It prints {"text","alt","class","tooltip"}, and the class is what the
+    // .recording/.transcribing rules in style.css hang off. Icons come from
+    // [status] icon_theme = "nerd-font" in ~/.config/voxtype/config.toml,
+    // which resolves to the U+F1xx FontAwesome range the rest of the bar uses.
+    //
+    // Clicking is the same toggle as the keybinding, not voxtype's suggested
+    // `systemctl --user restart voxtype` -- the daemon is started by
+    // ~/scripts/dwlstart here, not by systemd.
+    "custom/voxtype": {
+        "exec": "$HOME/.local/bin/voxtype status --follow --format json 2> /dev/null",
+        "return-type": "json",
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "$HOME/scripts/dictate"
     },
     "custom/media": {
         "format": "{icon} {text}",

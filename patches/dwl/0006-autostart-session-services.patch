@@ -1,0 +1,11 @@
+diff --git a/dwl.desktop b/dwl.desktop
+index e1380f7..c96c226 100644
+--- a/dwl.desktop
++++ b/dwl.desktop
+@@ -1,5 +1,5 @@
+ [Desktop Entry]
+ Name=dwl
+ Comment=dwm for Wayland
+-Exec=dwl
++Exec=dwl -s /home/zaq/scripts/dwlstart
+ Type=Application

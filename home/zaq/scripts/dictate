@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# dictate toggles voxtype recording, bound to mod-slash in dwl's config.h.
+# Press once to start talking, press again to transcribe and type -- or just
+# stop talking, and the silence watchdog below ends the recording for you.
+#
+# The toggle itself is `voxtype record toggle`, but this wraps it rather than
+# calling it directly, because the auto-stop is not something voxtype does.
+# Its VAD only decides whether a *finished* recording contained any speech (so
+# a silent one is dropped instead of transcribed), and audio.max_duration_secs
+# is a flat wall-clock cap. Neither ends a recording early because you stopped
+# speaking, so that part is here.
+
+set -euo pipefail
+
+voxtype=~/.local/bin/voxtype
+runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
+state="$runtime/state"      # written by the daemon: idle|recording|transcribing
+watchpid="$runtime/watchdog.pid"
+
+# The mic, named explicitly for the same reason config.toml names it: the
+# built-in one is a pipewire filter-chain node doing the DSP that the Asahi
+# audio stack would otherwise skip. Keep this in sync with [audio].device.
+mic=effect_output.j316-mic
+
+# Silence is "quieter than this, for this long".
+#
+# Measured on an idle machine in a quiet room, the built-in mic floors at about
+# -45dBFS mean, peaking to roughly -23dBFS on transients. -35 sits ten-odd dB
+# above that floor and comfortably under speech, and it demonstrably trips.
+#
+# Do not raise this toward -20 on the basis of a busy machine. An earlier pass
+# measured the floor at -33dBFS and concluded nothing below -20 would ever fire
+# -- but that was taken during a cargo build with fans up and a conversation in
+# the room, and it is wrong by 12dB. A threshold that high treats ordinary
+# speech as silence, which is the failure that actually costs you something.
+#
+# The two ways to be wrong are not equal:
+#   too high (toward 0)  -> cuts you off mid-sentence, dictation lost
+#   too low  (toward -60) -> never auto-stops; recoverable, you press mod-slash
+#                            again, and max_duration_secs backstops at 2min
+# So err low. If it cuts you off, go *more* negative; if it never stops, go
+# less negative.
+#
+# To re-measure in your own conditions -- room as usual, say nothing:
+#   ffmpeg -f pulse -i effect_output.j316-mic -af volumedetect -f null -
+# then confirm the gate still trips, with a short d so you aren't waiting:
+#   ffmpeg -f pulse -i effect_output.j316-mic \
+#       -af silencedetect=noise=-35dB:d=2 -f null - 2>&1 | grep silence_start
+# (A highpass to shave off fan rumble was tried and bought ~2dB -- the noise is
+# broadband, so it isn't worth the extra filter.)
+silence_dbfs=-35
+silence_secs=10
+
+# Kill a watchdog from a previous recording. The pidfile holds ffmpeg's own pid
+# (see below), so killing it closes the pipe feeding the reader loop, which
+# ends that too -- one signal tears down the pair.
+stop_watchdog() {
+	[[ -f $watchpid ]] || return 0
+	kill "$(<"$watchpid")" 2>/dev/null || true
+	rm -f "$watchpid"
+}
+
+case "$(cat "$state" 2>/dev/null || echo idle)" in
+recording | streaming)
+	# Two names for "the mic is open": the daemon writes "recording" for the
+	# batch pipeline and "streaming" for the cache-aware one. Both have to
+	# stop here -- matching only "recording" means that under streaming the
+	# second press falls through to the start path below and fires another
+	# `record start` instead, leaving the mic open with no way to close it
+	# short of the silence timeout.
+	stop_watchdog
+	exec "$voxtype" record stop
+	;;
+transcribing)
+	# Mid-transcription. Starting another recording here would race the one
+	# still being typed out, so this press does nothing.
+	exit 0
+	;;
+esac
+
+"$voxtype" record start
+mkdir -p "$runtime"
+stop_watchdog # paranoia: never leave two watchdogs on one mic
+
+# ffmpeg reads the mic a second time, alongside voxtype -- pipewire is happy to
+# have two capture streams on one node, and the cost of an RMS filter at 16kHz
+# is nothing. silencedetect prints "silence_start" only once the quiet has
+# already lasted $silence_secs, so that line *is* the timeout firing.
+#
+# The brace group backgrounds ffmpeg and records its real pid before waiting on
+# it. Backgrounding the pipeline as a whole would make $! the reader loop
+# instead, and killing that would leave ffmpeg holding the mic open.
+# The whole thing is wrapped in a subshell whose stdio goes to /dev/null. A
+# background job inherits the caller's stdout, and anything reading that -- a
+# terminal you ran this from by hand, or a script capturing it -- then blocks
+# until the watchdog exits, which is up to $silence_secs later. dwl's spawn
+# does not care, but "run it by hand and the shell hangs" is a trap worth not
+# leaving lying around.
+(
+	{
+		ffmpeg -hide_banner -nostdin -loglevel info \
+			-f pulse -i "$mic" \
+			-af "silencedetect=noise=${silence_dbfs}dB:d=${silence_secs}" \
+			-f null - 2>&1 &
+		echo $! >"$watchpid"
+		wait
+	} | while IFS= read -r line; do
+		[[ $line == *silence_start* ]] || continue
+		# A no-op if the recording was already stopped by hand in the meantime.
+		"$voxtype" record stop || true
+		break
+	done
+) </dev/null >/dev/null 2>&1 &
+
+# Nothing waits on that job: dwl spawns this script and forgets it, so the
+# watchdog outlives us as an orphan and tears itself down either on the
+# silence timeout above or on the next press.
+exit 0

@@ -1,0 +1,34 @@
+#!/bin/sh
+# dwl's session startup, run as `dwl -s /home/zaq/scripts/dwlstart` from
+# dwl.desktop (see patches/dwl/0006). dwl runs this via /bin/sh once the
+# wayland socket exists and the backend is up, so WAYLAND_DISPLAY is already
+# set for everything below.
+#
+# It lives here rather than inline in dwl.desktop because that file is part of
+# the dwl source tree: inlining would mean a patch edit, a rebuild and a
+# `sudo make install` every time the autostart list changes. This is just a
+# file, and the symlink into ~/scripts is enough.
+#
+# Absolute paths throughout -- gdm starts the session with its own environment,
+# not a fish login shell, so ~/.local/bin is not necessarily on PATH.
+
+# The bar. Reads dwl's tags/layout over the ipc protocol from patches/dwl/0001.
+/usr/bin/waybar &
+
+# The dictation daemon. mod-slash in dwl's config.h only signals it -- with
+# nothing running, `voxtype record start` prints "not running" and the key does
+# nothing. Guarded so a machine that hasn't built voxtype yet still gets a
+# working session out of this script.
+if [ -x "$HOME/.local/bin/voxtype" ]; then
+	"$HOME/.local/bin/voxtype" -q daemon &
+fi
+
+# Turns the focused border and every foot caret red while the mic is open, by
+# following the daemon above. Unguarded and started unconditionally: it does its
+# own check for voxtype and reconnects on its own if the daemon is restarted, so
+# there is nothing here to order against.
+"$HOME/scripts/dictate-indicator" &
+
+# Stay alive so the started jobs remain children of dwl's startup process
+# rather than being orphaned the moment this script would otherwise exit.
+wait

@@ -1,0 +1,222 @@
+# voxtype -- dictation, toggled with mod-slash. Press once to start talking,
+# press again to transcribe, or just stop talking and let the silence watchdog
+# end it. See ~/projects/voxtype for the source; setup.sh builds it.
+#
+# The keybinding is not here: dwl runs ~/scripts/dictate (bound in
+# ~/projects/dwl/config.h), which drives voxtype over the CLI. The 10s
+# silence auto-stop lives in that script too -- see the comment there for why
+# it can't be done with anything in this file.
+
+# Parakeet rather than whisper, for two reasons specific to dictation:
+# whisper pads every clip to its 30s training window, so a five-second
+# utterance costs what thirty seconds costs, and it was trained on YouTube
+# subtitles so near-silent audio decodes to "Thank you for watching!" -- which
+# matters doubly with a toggle binding, where a recording left running types
+# that into whatever happens to be focused. Parakeet's encoder runs on the
+# actual audio length and its transducer emits nothing at all on silence.
+#
+# Requires the binary to be built with `--features parakeet` (setup.sh does).
+engine = "parakeet"
+
+# $XDG_RUNTIME_DIR/voxtype/state, holding idle/recording/transcribing. The
+# waybar module tails this; `record` and `status` need it either way.
+state_file = "auto"
+
+[hotkey]
+# The built-in evdev grabber wants membership in the `input` group and a
+# dedicated key it can own globally. dwl hands us the key instead, so it stays
+# off and mod-slash remains an ordinary compositor binding.
+enabled = false
+
+# Only read by the evdev grabber above, which is off -- ~/scripts/dictate is
+# what actually implements the toggle. Set anyway because streaming refuses to
+# run in push-to-talk and auto-promotes this to "toggle", warning on every
+# start otherwise. The reason is worth knowing: streaming types at the cursor
+# *while* a push-to-talk key would still be held, and that injected typing
+# makes libinput-based compositors lose track of the held key, so the release
+# never arrives and the recording never ends.
+mode = "toggle"
+
+[audio]
+# "pipewire" -- an ALSA device name, NOT a pipewire node name. voxtype's docs
+# point you at `pactl list sources short`, but it enumerates through cpal/ALSA,
+# so a node name like "effect_output.j316-mic" is simply not found and the
+# daemon fails at record time with "Audio device not found". The list it will
+# accept here is: pipewire, default, hw:CARD=AppleJ316HPAI,DEV=0,
+# hw:CARD=AppleJ316,DEV=0.
+#
+# Of those, "pipewire" is the one that matters, because what it resolves to is
+# the pipewire *default source* -- currently effect_output.j316-mic, the
+# filter-chain node that the `pipewire -c filter-chain.conf` process publishes.
+# That filter chain is doing the DSP the Asahi audio hardware expects the OS to
+# do for it. Naming either hw:CARD= device instead would bypass it and hand
+# over the raw mic array, which sounds bad enough to cost real accuracy.
+#
+# So if the headset jack is ever wanted, don't change this -- change the
+# pipewire default source (`wpctl set-default`), and this follows it.
+device = "pipewire"
+sample_rate = 16000
+# Backstop, not the normal path: ~/scripts/dictate ends a recording after 10s
+# of silence, and a second mod-slash ends it immediately. This only fires if
+# the watchdog was killed, or if you genuinely talk for two minutes straight.
+max_duration_secs = 120
+
+[parakeet]
+# The "unified" build, not the plain tdt-0.6b-v3 one, because only this ships
+# the `tokenizer.model` that parakeet-rs's cache-aware streaming pipeline
+# requires at load time. voxtype flags the other as streaming_compatible=false
+# and it fails outright at load rather than quietly falling back.
+#
+# The cost of that is language coverage: this one is English-only, where
+# tdt-0.6b-v3 does 25. That model is still on disk under
+# ~/.local/share/voxtype/models, and now that streaming is off below there is
+# nothing holding this here -- switching back is just this one line.
+model = "parakeet-unified-en-0.6b"
+
+# Off, which costs the live typing -- text now lands all at once on stop --
+# and buys spoken punctuation, which is the better half of that trade.
+#
+# The two are mutually exclusive in voxtype, and silently so. Everything under
+# [text] (spoken_punctuation, replacements, filler-word filtering) and all of
+# [output.post_process] runs in exactly one place: handle_transcription_result
+# in src/daemon.rs, the *non-streaming* completion path. The streaming event
+# pump a couple of thousand lines further down types Partial/Final/Replace text
+# straight through to the output chain and never touches the text processor.
+# src/output/streaming.rs says so outright for post_process -- "intentionally
+# bypassed during streaming", because processing each chunk independently would
+# produce inconsistent output -- and spoken punctuation is bypassed for the same
+# structural reason, just without the comment. So with streaming on, saying
+# "period" types the word period; the [text] block below is dead config.
+#
+# What streaming was buying was watching words appear as you talk, at the price
+# of visible self-correction mid-sentence when the model revised an earlier word
+# (a Replace event, which backspaces and retypes). Punctuation you don't have to
+# reach for the keyboard to add is worth more than that.
+streaming = false
+
+# Everything from here to on_demand_loading is inert while streaming is off,
+# kept for if it goes back on. Note the numbers and the prose disagree: the
+# values are 1.5/1.0/0.50 where the arithmetic below describes 2.0/1.6/0.48.
+# Recheck them against the divisibility rule before trusting either.
+#
+# 2s chunks rather than the 0.5s default. This is the whole cost/benefit knob:
+# the encoder runs once per chunk for as long as you're talking, so 0.5s means
+# four times the inference of 2s for four times finer-grained feedback. This
+# machine has no usable GPU for ONNX -- the EPs upstream ships are CUDA,
+# TensorRT, MIGraphX and CoreML, none of which apply to an Apple GPU under
+# Linux -- so every one of those passes is on the CPU, and 2s leaves real
+# headroom where 0.5s might not keep up.
+streaming_chunk_secs = 1.5
+
+# These three cannot be set freely: parakeet-rs converts each to mel frames as
+# secs * 16000 / 160, i.e. secs * 100, and rejects the config unless every one
+# of them is divisible by the encoder's subsampling factor of 8. So each value
+# has to be a multiple of 0.08s, and anything else fails at model load with
+# "must map to a mel-frame count divisible by 8" -- the daemon exits, it does
+# not fall back.
+#
+# voxtype's own defaults (1.5 and 0.5) are NOT valid here: they come to 150 and
+# 50 frames. So these are not tuning preferences, they are corrections --
+#   left  1.6s  -> 160 frames (/8 = 20), nearest valid to the intended 1.5
+#   chunk 2.0s  -> 200 frames (/8 = 25), valid as chosen
+#   right 0.48s -> 48 frames  (/8 = 6),  nearest valid *under* the intended 0.5
+#
+# Right context is lookahead -- the pipeline waits for that much audio past a
+# chunk before emitting it -- so it adds to the delay on top of the chunk, which
+# is why this rounds down rather than up to 0.56.
+#
+# Left context is the amortisation knob. The encoder processes
+# left + chunk + right = 4.08s of audio for every 2.0s chunk, so it has to run
+# better than ~2x realtime to keep up. A smaller chunk would make that ratio
+# much worse: parakeet-rs's own defaults (5.6/0.56/0.56) encode 6.72s per 0.56s
+# chunk, needing 12x realtime.
+streaming_left_context_secs = 1.0
+streaming_right_context_secs = 0.50
+
+# Keep the model resident -- it is ~2.6GB against 30GB of RAM, and on-demand
+# loading would put a cold load of that in front of every utterance.
+on_demand_loading = false
+
+[output]
+# wtype types at the cursor via the virtual-keyboard protocol, which dwl
+# supports natively -- no uinput, no root, unlike ydotool.
+mode = "type"
+# If a client mishandles the injected keymap the text lands on the clipboard
+# rather than vanishing.
+#
+# This used to be a bad bet, and only because of streaming. Typing applied each
+# chunk as an incremental delta at the cursor so the text accumulated, but the
+# clipboard has no equivalent and every chunk simply *overwrote* the last:
+# measured directly, a 14s clip that typed fine came out of the clipboard path
+# as only its final 25-character fragment -- and a fragment that looks like a
+# whole sentence is worse than an error. With streaming off there is one
+# utterance and one clipboard write, so the fallback is a plain fallback again.
+fallback_to_clipboard = true
+type_delay_ms = 0
+
+[output.notification]
+# The waybar module already shows the state; a notification on every utterance
+# is noise on top of it.
+on_recording_start = false
+on_recording_stop = false
+
+[osd]
+# The on-screen display is a separate binary (voxtype-osd), built only with the
+# osd-native/osd-gtk4 features -- which pull in wgpu/egui or gtk4. Not built
+# here, and without this the daemon logs a "Failed to spawn `voxtype-osd`"
+# warning every startup. The waybar module is the indicator instead.
+enabled = false
+
+[status]
+# Drives the custom/voxtype waybar module. "nerd-font" resolves to the U+F1xx
+# FontAwesome range (microphone, filled circle, spinner, mic-slash) -- the same
+# range the rest of the bar draws from, and first in style.css's font stack.
+# The emoji default would be the only emoji up there.
+icon_theme = "nerd-font"
+
+[status.icons]
+# Override just the idle glyph. The theme's idle is U+F130, a *solid*
+# microphone -- which is the identical glyph pulseaudio already draws for its
+# source a couple of modules over, so the bar ended up with two mystery
+# microphones and this one read as part of the volume readout. U+EC12 is the
+# outline variant, unmistakably a different thing at a glance.
+#
+# It resolves through Symbols Nerd Font (FontAwesome and Weather Icons don't
+# carry U+ECxx). Material Icons also claims it, but deliberately is not in
+# style.css's stack -- see the warning there, it blanks all ASCII.
+#
+# Streaming needs an override for a different reason: the theme uses U+F519
+# (broadcast tower) for it, which is a FontAwesome *5* codepoint. Debian's
+# fonts-font-awesome is 4.x and has no such glyph, so it fell through the stack
+# and rendered as an unrelated arrow. U+F111 is the filled circle the theme
+# already uses for the non-streaming recording state: it exists in FontAwesome
+# 4, and it is the universal record dot -- which is the right symbol anyway,
+# since "streaming" and "recording" are the same thing to the person talking.
+#
+# That override is inert now that streaming is off -- the state reported is
+# "recording", which the theme already draws as U+F111 -- but it costs nothing
+# and would be needed again the moment streaming came back.
+#
+# transcribing (spinner, U+F110) and stopped (mic-slash, U+F131) are left to
+# the theme; both are FontAwesome 4 codepoints and both render.
+idle = ""
+streaming = ""
+
+[text]
+# "period" -> "." and friends. The whole point is not reaching for the keyboard
+# mid-sentence. Depends on streaming being off up in [parakeet] -- see there.
+#
+# The vocabulary is a fixed table in src/text/mod.rs, not configurable, longest
+# phrase first: question mark, exclamation mark/point, open|close paren(thesis)
+# /bracket/brace, at sign|symbol, dollar|percent|plus|equals sign, forward
+# slash, single|double quote, new paragraph, new line, then the single words
+# period, comma, colon, semicolon, dash, hyphen, underscore, hash, hashtag,
+# percent, ampersand, asterisk, plus, equals, slash, backslash, pipe, tilde,
+# backtick, tab. Matching is case-insensitive and on word boundaries, and
+# spacing around the symbol is tidied up afterwards.
+#
+# There is no escape hatch: the words are always punctuation, so dictating a
+# sentence *about* a semicolon is not something this mode can do. If that ever
+# bites, [text.replacements] runs both before and after this pass and can map a
+# phrase back.
+spoken_punctuation = true
