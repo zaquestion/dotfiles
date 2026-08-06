@@ -15,7 +15,9 @@ set -euo pipefail
 voxtype=~/.local/bin/voxtype
 runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
 state="$runtime/state"      # written by the daemon: idle|recording|transcribing
+pidfile="$runtime/pid"      # written by the daemon at startup, removed on exit
 watchpid="$runtime/watchdog.pid"
+config=~/.config/voxtype/config.toml
 
 # The mic, named explicitly for the same reason config.toml names it: the
 # built-in one is a pipewire filter-chain node doing the DSP that the Asahi
@@ -77,6 +79,73 @@ transcribing)
 	exit 0
 	;;
 esac
+
+# Pick up edits to config.toml. voxtype reads it once at startup and does not
+# hot-reload -- upstream says so outright, and the only remedy it offers is
+# `systemctl --user restart voxtype`, which means nothing here: the daemon is a
+# plain background job from ~/scripts/dwlstart. Without this an edit sits inert
+# until the next login, which is a confusing way to conclude a setting is
+# broken. (Measured: a cold start is ~2.3s, model load included.)
+#
+# Here rather than in an inotify watcher on purpose, even though inotifywait is
+# installed. This file lives in a git worktree of the dotfiles repo, so a
+# checkout or a rebase rewrites it; a watcher would answer that by reloading a
+# 2.6GB model while you are doing something else entirely, and would need its
+# own guard against firing mid-recording. Checking on the start path costs one
+# `ps` when nothing has changed, and cannot fire at a bad moment because the
+# only moment it fires is the one where the mic is about to open anyway.
+#
+# Staleness needs no bookkeeping: `ps -o etimes=` is seconds since the daemon
+# started, and a daemon up longer than the file has been edited predates it.
+#
+# `stat -L` and not plain `stat`: this path is a symlink into the dotfiles repo,
+# and stat without -L reports on the *link*, whose mtime is whenever setup.sh
+# created it. Editing the config would then never register -- silently, and in
+# the direction that does nothing, so it would look like the check simply
+# wasn't there.
+reload_stale_daemon() {
+	local pid uptime edited
+	[[ -f $pidfile && -f $config ]] || return 0
+	pid=$(<"$pidfile")
+	uptime=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ') || true
+	[[ -n $uptime ]] || return 0    # pidfile left behind by a crashed daemon
+	edited=$(( $(date +%s) - $(stat -Lc %Y "$config") ))
+	(( uptime > edited )) || return 0
+
+	kill "$pid" 2>/dev/null || true
+	# Wait for it to actually be gone before respawning. The single-instance
+	# guard is a pidfile, not an flock, so an overlapping start is refused
+	# outright -- and while it does clean up a lock left by a dead process, that
+	# is a fallback to land in deliberately rather than a race to run.
+	for _ in $(seq 40); do
+		kill -0 "$pid" 2>/dev/null || break
+		sleep 0.25
+	done
+
+	# Clear the state file by hand: the daemon writes "idle" as the very last
+	# thing before its event loop, after the model is resident, so that write is
+	# exactly the readiness signal we want -- but until it lands the file still
+	# holds the *previous* daemon's "idle", and polling it uncleared would report
+	# ready immediately and start recording into a daemon that cannot hear.
+	rm -f "$state"
+
+	# Detached. dwl spawns this script and forgets it, so a child daemon would
+	# be orphaned mid-load anyway; setsid makes that deliberate and keeps the
+	# daemon out of this script's process group.
+	setsid "$voxtype" -q daemon </dev/null >/dev/null 2>&1 &
+
+	# There is no notification daemon on this machine, so the bar is the only
+	# feedback: #custom-voxtype drops to .stopped grey while this runs and comes
+	# back as .idle. As ever, red is the cue that the mic is really open --
+	# don't start talking before it.
+	for _ in $(seq 120); do
+		if [[ $(cat "$state" 2>/dev/null) == idle ]]; then return 0; fi
+		sleep 0.25
+	done
+	return 1        # 30s and no daemon; fall through and let record start speak
+}
+
+reload_stale_daemon || true
 
 "$voxtype" record start
 mkdir -p "$runtime"
