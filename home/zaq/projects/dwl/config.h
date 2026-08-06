@@ -9,7 +9,13 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
 static const unsigned int borderpx         = 1;  /* border pixel of windows */
 static const float rootcolor[]             = COLOR(0x222222ff);
 static const float bordercolor[]           = COLOR(0x444444ff);
-static const float focuscolor[]            = COLOR(0x005577ff);
+/* Lavender rather than dwl's stock blue, and specifically violet-400 -- the
+ * same ring-ver-color ~/.config/swaylock/config uses, so the lock screen and
+ * the focused window are the one accent. Kept at the -400 step and not the
+ * paler -300 lilac because borderpx is 1: a single pixel of a washed-out
+ * colour reads as grey, and the whole job of this line is to be the thing that
+ * distinguishes focused from bordercolor's #444444 at a glance. */
+static const float focuscolor[]            = COLOR(0xa78bfaff);
 static const float urgentcolor[]           = COLOR(0xff0000ff);
 /* The focused border while the mic is open (patches/dwl/0007). Same red as
  * #custom-voxtype.recording in ~/.config/waybar/style.css and as the foot
