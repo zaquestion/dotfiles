@@ -48,9 +48,17 @@
 }
 
 /* Occupied but not focused: underline only, so it reads as "something's here"
- * without competing with the focused tag. */
+ * without competing with the focused tag below. Same violet-400 -- the accent
+ * now means "windows" everywhere it appears, and what separates the two states
+ * is the shape, a line against a filled chip, rather than two colours.
+ *
+ * At full opacity, where this was previously 50% white. The alpha was what
+ * kept an underline from competing with a *white* underline on the focused
+ * tag; against a filled one there is nothing left to compete with, and half an
+ * alpha over the bar's dark background blends violet-400 toward a grey-purple
+ * that no longer reads as the same colour as anything else. */
 #tags button.occupied {
-    box-shadow: inset 0 -3px rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 -3px #a78bfa;
 }
 
 /* The same violet-400 as dwl's focuscolor in ~/projects/dwl/config.h, so the
