@@ -21,8 +21,8 @@
  * label and number in the bar disappear. Symbols Nerd Font covers every glyph
  * it would have provided anyway.
  *
- * The remaining non-icon characters -- ⸨ ⸩ in the mpd format and 🎜 in
- * custom/media -- fall through to the text and emoji fonts on purpose. */
+ * The remaining non-icon characters -- ⸨ ⸩ in the mpd format -- fall through to
+ * the text fonts on purpose. */
 * {
     font-family: FontAwesome, "Weather Icons", "Symbols Nerd Font", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -74,18 +74,6 @@ window#waybar {
 #tray,
 #custom-power {
     background-color: #241d30;
-    border-radius: 3px;
-    margin: 3px 1px;
-    padding: 0 10px;
-}
-
-/* custom/media lives in modules-left, not the chip row, but the default paints
- * it mint green (#66cc99 on #2a5c45) and it only appears when a player is
- * running -- i.e. it would show up mid-session as the one leftover of the old
- * theme. Same chip, neutral text. */
-#custom-media {
-    background-color: #241d30;
-    color: #b9b0cc;
     border-radius: 3px;
     margin: 3px 1px;
     padding: 0 10px;

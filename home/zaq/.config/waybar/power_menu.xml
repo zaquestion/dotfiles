@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The menu behind #custom-power in config.jsonc, opened on click. Modelled on
+  /usr/share/waybar/custom_modules/power_menu.xml from the Debian package.
+
+  waybar builds this with GtkBuilder, so it is a GTK menu description rather
+  than a waybar format of its own. Two things follow from that, and both are
+  easy to get wrong:
+
+  - The GtkMenu's id must be "menu". That is the id waybar looks up; anything
+    else builds fine and yields no menu.
+  - Each item is wired to config.jsonc by its *id*, not by any property. There
+    is no "action" property on GtkMenuItem -- adding one makes GtkBuilder reject
+    the file. So <object id="reboot"> is what binds to "reboot" under
+    "menu-actions", and an id with no entry there is drawn and does nothing.
+
+  Ordered least to most destructive, with the separator keeping the two
+  irreversible entries away from the pointer's path to Lock.
+-->
+<interface>
+  <object class="GtkMenu" id="menu">
+    <child>
+      <object class="GtkMenuItem" id="lock">
+        <property name="label">Lock</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="suspend">
+        <property name="label">Suspend</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="delimiter1"/>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="reboot">
+        <property name="label">Reboot</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="shutdown">
+        <property name="label">Shut down</property>
+      </object>
+    </child>
+  </object>
+</interface>

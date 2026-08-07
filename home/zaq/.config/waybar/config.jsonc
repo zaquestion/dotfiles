@@ -7,9 +7,12 @@
     "spacing": 1, // Gaps between modules (4px)
     "reload_style_on_change": true, // restyle live on save, imports included
     // Choose the order of the modules
+    // custom/media is gone: it ran the stock theme's mediaplayer.py, which was
+    // never in this repo and never on disk, so the module produced nothing but
+    // a swallowed stderr. Bringing it back means tracking that script plus
+    // python3-gi and playerctl, for a media player that isn't installed here.
     "modules-left": [
-	"dwl/tags",
-        "custom/media"
+	"dwl/tags"
     ],
     "modules-center": [
         "dwl/window"
@@ -193,28 +196,26 @@
         "tooltip": true,
         "on-click": "$HOME/scripts/dictate"
     },
-    "custom/media": {
-        "format": "{icon} {text}",
-        "return-type": "json",
-        "max-length": 40,
-        "format-icons": {
-            "spotify": "",
-            "default": "🎜"
-        },
-        "escape": true,
-        "exec": "$HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
-        // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
-    },
+    // power_menu.xml is tracked next to this file now, so it is symlinked into
+    // place with everything else. Without it waybar still draws the icon and
+    // the click silently does nothing, which is how this sat until now.
+    //
+    // The actions are systemctl verbs rather than the stock theme's bare
+    // `shutdown`/`reboot`: those are /sbin binaries that want root, so clicking
+    // them from a user session fails. systemctl routes the same request through
+    // logind, which polkit already grants to a logged-in local user -- the same
+    // path the suspend entry was using all along. Hibernate is left out; it
+    // needs swap sized for it, and there is none here.
     "custom/power": {
         "format" : "⏻ ",
 		"tooltip": false,
 		"menu": "on-click",
-		"menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder
+		"menu-file": "$HOME/.config/waybar/power_menu.xml",
 		"menu-actions": {
-			"shutdown": "shutdown",
-			"reboot": "reboot",
+			"lock": "swaylock",
 			"suspend": "systemctl suspend",
-			"hibernate": "systemctl hibernate"
+			"reboot": "systemctl reboot",
+			"shutdown": "systemctl poweroff"
 		}
     },
     "dwl/tags": {
