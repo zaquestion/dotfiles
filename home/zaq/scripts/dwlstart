@@ -1,6 +1,7 @@
 #!/bin/sh
-# dwl's session startup, run as `dwl -s /home/zaq/scripts/dwlstart` from
-# dwl.desktop (see patches/dwl/0006). dwl runs this via /bin/sh once the
+# dwl's session startup, run as `dwl -s $HOME/scripts/dwlstart` from
+# dwl.desktop (see patches/dwl/0006 -- setup.sh stamps the real path in when it
+# applies that patch). dwl runs this via /bin/sh once the
 # wayland socket exists and the backend is up, so WAYLAND_DISPLAY is already
 # set for everything below.
 #

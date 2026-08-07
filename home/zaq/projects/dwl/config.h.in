@@ -56,11 +56,24 @@ static const Layout layouts[] = {
 /* (x=-1, y=-1) is reserved as an "autoconfigure" monitor position indicator
  * WARNING: negative values other than (-1, -1) cause problems with Xwayland clients due to
  * https://gitlab.freedesktop.org/xorg/xserver/-/issues/899 */
+/* @SCALE@ is stamped by setup.sh, which reads the panel's preferred mode out of
+ * the eDP-1 entry under /sys/class/drm and writes 2 for a panel 2560px or
+ * wider, 1
+ * otherwise. It is the one value in here that cannot be written portably: dwl
+ * matches a MonitorRule on the output *name*, so "eDP-1" alone says nothing
+ * about whether that panel is 254dpi or 96dpi, and hardcoding 2 makes every
+ * ordinary 1080p laptop render at half resolution.
+ *
+ * Which is why this file is config.h.in and not config.h. Nothing else here
+ * needs stamping -- see the $HOME note further down -- so if the eDP-1 rule is
+ * ever dropped, so can the template.
+ *
+ * Everything but eDP-1 falls through to the default rule below, which is scale
+ * 1 already; an external display that wants 2 needs its own rule. */
 static const MonitorRule monrules[] = {
-   /* name        mfact  nmaster scale layout       rotate/reflect                x    y
-    * example of a HiDPI laptop monitor: */
-    { "eDP-1",    0.5f,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 }, 
-	{ NULL,       0.55f, 1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+   /* name        mfact  nmaster scale     layout       rotate/reflect                x    y */
+    { "eDP-1",    0.5f,  1,      @SCALE@,  &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+	{ NULL,       0.55f, 1,      1,        &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
 	/* default monitor rule: can be changed but cannot be eliminated; at least one monitor rule must exist */
 };
 
@@ -132,18 +145,31 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static const char *termcmd[] = { "/home/zaq/scripts/footcwd", NULL };
-static const char *menucmd[] = { "wmenu-run", NULL };
-static const char *snipcmd[] = { "/home/zaq/scripts/snip", NULL };
-/* colors come from ~/.config/swaylock/config, not from here */
-static const char *lockcmd[] = { "swaylock", NULL };
+/* Anything under ~/scripts goes through SHCMD rather than a plain argv array,
+ * purely so the path can be written as $HOME. dwl's spawn() is execvp() with no
+ * shell, so an argv entry is taken literally -- "$HOME/scripts/snip" as an
+ * array element is a filename with a dollar sign in it, not an expansion. The
+ * /bin/sh SHCMD adds is what does the expanding, and `exec` keeps it from
+ * lingering as a parent process for the thing it launched.
+ *
+ * The alternative was stamping the real path in at install time, the way
+ * @SCALE@ above is stamped. $HOME is better where it works: it survives a
+ * different username with no re-render, and it keeps this file readable as
+ * itself rather than as a template. */
+#define TERMCMD SHCMD("exec $HOME/scripts/footcwd")
+#define SNIPCMD SHCMD("exec $HOME/scripts/snip")
 
 /* Dictation, toggled with mod-slash: press once to start talking, press again
  * to transcribe -- or just stop talking, the script gives up after 10s of
  * silence. It wraps `voxtype record toggle` because that silence watchdog is
  * not something voxtype does on its own. Engine, model and mic live in
  * ~/.config/voxtype/config.toml; the daemon is started by ~/scripts/dwlstart. */
-static const char *dictatecmd[] = { "/home/zaq/scripts/dictate", NULL };
+#define DICTATECMD SHCMD("exec $HOME/scripts/dictate")
+
+/* No $HOME in these, so they stay plain argv arrays -- one less /bin/sh. */
+static const char *menucmd[] = { "wmenu-run", NULL };
+/* colors come from ~/.config/swaylock/config, not from here */
+static const char *lockcmd[] = { "swaylock", NULL };
 
 static const char *brightup[] = { "/usr/bin/brightnessctl", "set", "5%+", NULL };
 static const char *brightdown[] = { "/usr/bin/brightnessctl", "set", "5%-", NULL };
@@ -156,7 +182,7 @@ static const Key keys[] = {
 	/* Note that Shift changes certain key codes: 2 -> at, etc. */
 	/* modifier                  key                  function          argument */
 	{ MODKEY,                    XKB_KEY_p,           spawn,            {.v = menucmd} },
-	{ MODKEY,                    XKB_KEY_Return,      spawn,            {.v = termcmd} },
+	{ MODKEY,                    XKB_KEY_Return,      spawn,            TERMCMD },
 	{ MODKEY,                    XKB_KEY_j,           focusstack,       {.i = +1} },
 	{ MODKEY,                    XKB_KEY_k,           focusstack,       {.i = -1} },
 	{ MODKEY,                    XKB_KEY_i,           incnmaster,       {.i = +1} },
@@ -166,9 +192,9 @@ static const Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Return,      zoom,             {0} },
 	{ MODKEY,                    XKB_KEY_Tab,         view,             {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,           killclient,       {0} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_S,           spawn,            {.v = snipcmd} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_S,           spawn,            SNIPCMD },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_L,           spawn,            {.v = lockcmd} },
-	{ MODKEY,                    XKB_KEY_slash,       spawn,            {.v = dictatecmd} },
+	{ MODKEY,                    XKB_KEY_slash,       spawn,            DICTATECMD },
 	{ MODKEY,                    XKB_KEY_t,           setlayout,        {.v = &layouts[0]} },
 	{ MODKEY,                    XKB_KEY_f,           setlayout,        {.v = &layouts[1]} },
 	{ MODKEY,                    XKB_KEY_m,           setlayout,        {.v = &layouts[2]} },

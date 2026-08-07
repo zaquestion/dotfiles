@@ -7,5 +7,5 @@ index e1380f7..c96c226 100644
  Name=dwl
  Comment=dwm for Wayland
 -Exec=dwl
-+Exec=dwl -s /home/zaq/scripts/dwlstart
++Exec=dwl -s @HOME@/scripts/dwlstart
  Type=Application

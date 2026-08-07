@@ -70,36 +70,83 @@ echo "===== Symlinking Files ====="
 # Link when the target is missing/broken (! -e) or is already a symlink (-L),
 # using -f to refresh stale links; real files are left untouched so we never
 # clobber something like a hand-edited ~/.bashrc.
-(cd home/zaq && find . -type f ! -name .gitkeep -exec test ! -e ~/'{}' -o -L ~/'{}' \; -and -exec ln -sfn `pwd`/'{}' ~/'{}' \;)
+#
+# *.in files are templates, not configs -- symlinking one would put a literal
+# @SCALE@ in front of a compiler. They're rendered further down instead, and are
+# the only files here that don't appear in $HOME under their own name.
+(cd home/zaq && find . -type f ! -name .gitkeep ! -name '*.in' -exec test ! -e ~/'{}' -o -L ~/'{}' \; -and -exec ln -sfn `pwd`/'{}' ~/'{}' \;)
 
 echo "===== Installing packages ====="
 # Debian/apt only; skipped elsewhere. apt install is idempotent -- already
 # installed packages are a no-op -- so re-running setup costs nothing.
+#
+# The desktop itself: dwl is built from source below, but everything it starts
+# or spawns is packaged. waybar is the bar (dwlstart runs /usr/bin/waybar by
+# absolute path), foot the terminal, wmenu the launcher on mod-p, swaylock the
+# locker on mod-shift-l (colors from ~/.config/swaylock/config), brightnessctl
+# the backlight keys, and pavucontrol what the bar's pulseaudio module opens on
+# click. grim/slurp back ~/scripts/snip on mod-shift-s.
+#
+# pipewire/pipewire-pulse/wireplumber are what the volume keys talk to through
+# wpctl, which wireplumber ships. xdg-user-dirs provides the
+# xdg-user-dirs-update called at the top of this script.
+#
+# dwl's own build deps come next. It links wlroots 0.18 specifically -- see
+# PKGS in its Makefile -- so the 0.19 packages, when Debian has them, are the
+# wrong ones. Not listed: gcc/git/pkg-config, already below for scrcpy.
+#
 # Fonts: waybar's config.jsonc draws its icons from Font Awesome and Weather
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
 # asks for first.
-# grim/slurp back ~/scripts/snip, bound to mod-shift-s in dwl's config.h.
-# swaylock is the screen locker, bound to mod-shift-l; it reads its colors from
-# ~/.config/swaylock/config.
-# jq reads the GitHub release JSON in the keychain install below.
+#
+# curl and unzip are used further down (the font, keychain and codelldb
+# fetches) and each of those blocks skips itself when the binary is missing --
+# quietly, which is how a run can look clean and install nothing. jq reads the
+# GitHub release JSON in the keychain install.
+#
 # wtype is how voxtype gets dictated text into the focused client -- it drives
 # the virtual-keyboard protocol, which dwl supports natively, so unlike ydotool
 # it needs no uinput access and no root. cmake, libasound2-dev and libclang-dev
 # are voxtype's own build deps (bindgen wants libclang); the build is below.
 # The remainder are scrcpy's build and runtime deps, per upstream doc/linux.md;
 # the build itself is further down.
+#
+# Deliberately not here: a display manager. dwl's `make install` drops its
+# session into /usr/local/share/wayland-sessions, which any wayland-capable DM
+# picks up, and installing gdm3 on a machine that already has one opens a
+# debconf prompt to pick the default -- an interactive question in the middle of
+# an otherwise mechanical install. Also not here: mise, which isn't in Debian.
+# Both are in the README's prerequisites.
 set +x # apt is noisy enough on its own
 if command -v apt >/dev/null; then
 	sudo apt install -y \
 		fish \
+		waybar \
+		foot \
+		wmenu \
+		swaylock \
+		brightnessctl \
+		pavucontrol \
+		pipewire \
+		pipewire-bin \
+		pipewire-pulse \
+		wireplumber \
+		xdg-user-dirs \
+		make \
+		libwlroots-0.18-dev \
+		libwayland-dev \
+		wayland-protocols \
+		libxkbcommon-dev \
+		libinput-dev \
 		fonts-font-awesome \
 		fonts-weather-icons \
 		fonts-roboto \
 		grim \
 		slurp \
-		swaylock \
 		wl-clipboard \
 		wtype \
+		curl \
+		unzip \
 		cmake \
 		libasound2-dev \
 		libclang-dev \
@@ -219,6 +266,53 @@ else
 fi
 set -x
 
+echo "===== Setting the default audio sink ====="
+# The volume keys in dwl's config.h drive @DEFAULT_AUDIO_SINK@, so they are only
+# ever as right as wireplumber's idea of the default -- and on this machine that
+# idea is wrong out of the box:
+#
+#   alsa_output.platform-sound.HiFi__Headphones__sink   priority.session = 1000
+#   audio_effect.j316-convolver  (the speakers)         priority.session =  850
+#
+# With no *configured* default, wireplumber picks by priority.session, so the
+# headphone jack wins with nothing plugged into it and the keys adjust a sink no
+# audio is going through. Picking the speakers once in pavucontrol is what fixed
+# it before, and what that actually did was write
+# default.configured.audio.sink into
+# ~/.local/state/wireplumber/default-nodes -- untracked local state, so a fresh
+# machine has never had it. This writes the same thing without the detour.
+#
+# The speakers are a filter-chain node, not an ALSA one: the Asahi audio setup
+# runs `pipewire -c filter-chain.conf` as filter-chain.service and the convolver
+# it publishes is doing the DSP the hardware expects the OS to do. That is also
+# why it loses the priority contest -- filter-chain nodes get no say in it.
+#
+# The node name is hardcoded rather than guessed at, and the block skips itself
+# where that node doesn't exist. On ordinary hardware there is nothing to fix:
+# the speaker sink outranks the jack the way it should, and quietly configuring
+# some heuristic's best guess as the permanent default would be a worse answer
+# than leaving wireplumber alone.
+set +x
+wp_sink=audio_effect.j316-convolver
+wp_state=${XDG_STATE_HOME:-$HOME/.local/state}/wireplumber/default-nodes
+if ! command -v wpctl >/dev/null || ! command -v pw-dump >/dev/null; then
+	echo "  no wpctl/pw-dump; skipping"
+elif grep -q '^default\.configured\.audio\.sink=' "$wp_state" 2>/dev/null; then
+	# Never override a choice already made -- including one made by hand in
+	# pavucontrol since the last run. This is the idempotent path.
+	echo "  a default sink is already configured; leaving it alone"
+elif ! wp_id=$(pw-dump 2>/dev/null | jq -r --arg n "$wp_sink" \
+	'first(.[] | select(.info.props."node.name" == $n
+	                and .info.props."media.class" == "Audio/Sink") | .id) // ""') \
+	|| [ -z "$wp_id" ]; then
+	# Either pipewire isn't reachable from here (a tty with no user session bus)
+	# or this isn't the machine that has that node. Both are fine to skip.
+	echo "  $wp_sink not present; leaving the default sink to wireplumber"
+else
+	wpctl set-default "$wp_id" && echo "  default sink set to $wp_sink (id $wp_id)"
+fi
+set -x
+
 echo "===== Setting fish as the login shell ====="
 # The config above is only half the story -- without this, ~/.config/fish is
 # just a config for a shell nothing ever starts. chsh prompts for the account
@@ -330,11 +424,70 @@ else
 		mkdir -p ~/.local/bin
 		install -m 755 "$voxtype_src/target/release/voxtype" ~/.local/bin/voxtype
 		echo "  installed: $(~/.local/bin/voxtype --version 2>/dev/null | head -1)"
-		echo "  -> fetch the model (~700MB) with:"
-		echo "     voxtype setup --download --model parakeet-tdt-0.6b-v3"
+		# Read out of config.toml rather than named here. This line used to
+		# carry its own copy of the model name and had already drifted from the
+		# config -- following it downloaded parakeet-tdt-0.6b-v3 while the
+		# daemon was asking for the unified build, which fails at load rather
+		# than falling back. The config is the thing voxtype actually reads, so
+		# it is the thing to quote.
+		vox_model=$(sed -n 's/^model[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' \
+			~/.config/voxtype/config.toml 2>/dev/null | head -1)
+		if [ -n "$vox_model" ]; then
+			echo "  -> fetch the model (~700MB) with:"
+			echo "     voxtype setup --download --model $vox_model"
+		else
+			echo "  -> couldn't read the model out of ~/.config/voxtype/config.toml;"
+			echo "     fetch whatever [parakeet] model = names there"
+		fi
 	else
 		echo "  voxtype build failed; see $voxtype_src"
 	fi
+fi
+set -x
+
+echo "===== Rendering dwl's config.h ====="
+# The one tracked file that is generated rather than symlinked. dwl matches a
+# MonitorRule on the output *name*, and "eDP-1" says nothing about whether the
+# panel behind it is 254dpi or 96dpi -- so the scale cannot be written portably
+# and has to be decided here, at install time, on the machine it applies to.
+#
+# The panel's preferred mode is the first line of its sysfs `modes`, which is
+# readable without a running compositor (wlr-randr would need a session, and
+# this may well run from a tty). 2560 as the cutoff is the usual HiDPI-laptop
+# line: this machine's 3456x2160 lands well above it, a 1920x1080 panel well
+# below. A desktop with no eDP-1 at all gets 1, which is what the fallback
+# MonitorRule already says anyway.
+#
+# Everything else in config.h uses $HOME through SHCMD and needs no stamping --
+# see the comment there. If the eDP-1 rule is ever dropped, this whole section
+# and the .in suffix can go with it.
+set +x
+dwl_cfg_in=$(pwd)/home/zaq/projects/dwl/config.h.in
+dwl_cfg=~/projects/dwl/config.h
+panel_w=
+for m in /sys/class/drm/*-eDP-1/modes; do
+	test -r "$m" || continue
+	panel_w=$(head -1 "$m" | cut -dx -f1)
+	break
+done
+if [ -n "$panel_w" ] && [ "$panel_w" -ge 2560 ] 2>/dev/null; then
+	dwl_scale=2
+else
+	dwl_scale=1
+fi
+mkdir -p ~/projects/dwl
+if [ -f "$dwl_cfg" ] && [ ! -L "$dwl_cfg" ] && [ "$dwl_cfg" -nt "$dwl_cfg_in" ]; then
+	# Edited in place since the last render. Rendering over it would throw away
+	# keybindings without saying so, and this is the one file here where that is
+	# possible at all -- symlinks can't be clobbered this way.
+	echo "  $dwl_cfg is newer than the template; leaving it alone"
+	echo "  (put the change in home/zaq/projects/dwl/config.h.in and delete the rendered file)"
+else
+	# -L as well as -f: a run from before this file was a template left a
+	# symlink here, and sed > would write back through it into the repo.
+	rm -f "$dwl_cfg"
+	sed "s/@SCALE@/$dwl_scale/g" "$dwl_cfg_in" >"$dwl_cfg"
+	echo "  rendered $dwl_cfg with scale $dwl_scale (eDP-1 ${panel_w:-absent})"
 fi
 set -x
 
@@ -360,8 +513,14 @@ else
 	# Clean checkout: apply the stack in order. They're interdependent -- each
 	# patch's context assumes the previous one landed -- so this has to be
 	# sequential, and a failure partway leaves the tree partially patched.
+	# Piped through sed rather than applied directly, to stamp @HOME@ into
+	# 0006's dwl.desktop. That one is an Exec= line in a desktop entry, which
+	# the display manager tokenizes without expanding anything, so a $HOME
+	# written there would reach dwl as a literal -- and unlike config.h and
+	# foot.ini there is no shell standing in front of it to fix that. The sed is
+	# a no-op for the other six.
 	for p in "$(pwd)"/patches/dwl/0*.patch; do
-		if git -C "$dwl_src" apply "$p"; then
+		if sed "s|@HOME@|$HOME|g" "$p" | git -C "$dwl_src" apply -; then
 			echo "  applied: $(basename "$p")"
 		else
 			echo "  FAILED:  $(basename "$p") -- tree is now PARTIALLY patched."

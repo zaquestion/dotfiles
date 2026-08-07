@@ -5,7 +5,18 @@ from a clean checkout. They are numbered in apply order and were verified to
 apply cleanly on top of dwl `0.7` (`74e45c4`).
 
 `config.h` is *not* a patch -- dwl gitignores it, so it lives in the dotfiles
-tree at `home/zaq/projects/dwl/config.h` and `setup.sh` symlinks it into place.
+tree and `setup.sh` puts it into place. It is the one tracked file that is
+*rendered* rather than symlinked: the source is
+`home/zaq/projects/dwl/config.h.in`, and `setup.sh` stamps `@SCALE@` from the
+eDP-1 panel's preferred mode before writing `~/projects/dwl/config.h`. dwl
+matches a `MonitorRule` on the output name, so `eDP-1` alone cannot say whether
+the scale should be 1 or 2, and that is the only thing in the file that can't be
+written portably -- the `~/scripts` paths use `$HOME` through `SHCMD`.
+
+The practical consequence: **edit `config.h.in`, not `~/projects/dwl/config.h`.**
+`setup.sh` refuses to render over a rendered file that is newer than the
+template, so a hand edit isn't silently destroyed -- but it also won't make it
+back into the repo on its own.
 
 ## The stack
 
@@ -73,6 +84,13 @@ The `-s` command is a path to a script rather than an inline command list on
 purpose: changing what autostarts is then just an edit to a tracked file in
 `~/scripts`, with no patch edit, no rebuild and no `sudo make install`.
 
+The path is written `@HOME@/scripts/dwlstart` and stamped by `setup.sh` as it
+applies the patch. This is the one place `$HOME` can't be used directly: `Exec=`
+in a desktop entry is tokenized by the display manager, which expands nothing,
+and unlike `config.h` (`SHCMD`) or `foot.ini` (`sh -c`) there is no shell in
+front of it. dwl *does* run the resulting string through `/bin/sh -c`, but only
+after the DM has already handed it over as a literal argument.
+
 Note `dwl-log.desktop` (the variant that redirects to `/tmp/dwl.log`) is
 installed in `/usr/local/share/wayland-sessions` but has no counterpart in the
 dwl source tree, so it is not covered by this patch and starts nothing. Log in
@@ -122,10 +140,13 @@ leaves the tree alone. Either way it never builds -- that stays manual:
     make && sudo make install
     # restart the dwl session for the new binary to take effect
 
-By hand, from a clean checkout at `0.7`:
+By hand, from a clean checkout at `0.7` -- note the `sed`, which is what stamps
+0006's `@HOME@` and is a no-op for the other six:
 
     cd ~/projects/dwl
-    for p in ~/projects/dotfiles/patches/dwl/0*.patch; do git apply "$p"; done
+    for p in ~/projects/dotfiles/patches/dwl/0*.patch; do
+        sed "s|@HOME@|$HOME|g" "$p" | git apply -
+    done
 
 Note the patches are interdependent and must go on in numeric order -- each
 one's context assumes the previous landed. For the same reason, don't use
@@ -144,9 +165,9 @@ re-added on its own:
 
 ## Fresh-machine ordering
 
-`setup.sh` creates `~/projects/dwl/` and drops the `config.h` symlink there, so
-a later `git clone` into that path fails on the non-empty directory. Clone dwl
-first, or populate the directory in place:
+`setup.sh` creates `~/projects/dwl/` and renders `config.h` into it, so a later
+`git clone` into that path fails on the non-empty directory. Clone dwl first, or
+populate the directory in place:
 
     git -C ~/projects/dwl init
     git -C ~/projects/dwl remote add origin https://codeberg.org/dwl/dwl.git
