@@ -525,11 +525,15 @@ set -x
 echo "===== Applying dwl patches ====="
 # dwl is built from a local checkout; our patches live in patches/dwl and are
 # applied in filename order. A patch that reverse-checks cleanly is already
-# applied, so re-running setup is a no-op. Note this only patches the source --
-# the compositor still has to be rebuilt and reinstalled by hand for any of it
-# to take effect. See patches/dwl/README.md.
+# applied, so re-running setup is a no-op. This only patches the source; the
+# build below is what makes any of it take effect. See patches/dwl/README.md.
+#
+# dwl_ready is what the build reads: set only where the source is in a state
+# worth compiling, so a missing checkout or a half-applied stack doesn't get
+# built and installed over a working compositor.
 set +x # the loop is noisy under -x; the echoes below say everything useful
 dwl_src=~/projects/dwl
+dwl_ready=
 if [ ! -d "$dwl_src/.git" ]; then
 	echo "  no dwl checkout at $dwl_src; skipping (see patches/dwl/README.md)"
 elif ! git -C "$dwl_src" diff --quiet; then
@@ -540,6 +544,7 @@ elif ! git -C "$dwl_src" diff --quiet; then
 	# so an already-applied 0001 reports as failed once the rest land on top.
 	echo "  $dwl_src has local modifications; assuming already patched, leaving alone"
 	echo "  (verify with: git -C $dwl_src diff --stat)"
+	dwl_ready=yes
 else
 	# Clean checkout: apply the stack in order. They're interdependent -- each
 	# patch's context assumes the previous one landed -- so this has to be
@@ -550,16 +555,53 @@ else
 	# written there would reach dwl as a literal -- and unlike config.h and
 	# foot.ini there is no shell standing in front of it to fix that. The sed is
 	# a no-op for the other six.
+	dwl_ready=yes
 	for p in "$(pwd)"/patches/dwl/0*.patch; do
 		if sed "s|@HOME@|$HOME|g" "$p" | git -C "$dwl_src" apply -; then
 			echo "  applied: $(basename "$p")"
 		else
 			echo "  FAILED:  $(basename "$p") -- tree is now PARTIALLY patched."
 			echo "  Reset with 'git -C $dwl_src checkout .' and see patches/dwl/README.md"
+			dwl_ready=
 			break
 		fi
 	done
-	echo "  -> run 'make && sudo make install' in $dwl_src, then restart the session"
+fi
+set -x
+
+echo "===== Building and installing dwl ====="
+# Unconditional, and from clean: everything above -- the checkout, the rendered
+# config.h, the patch stack -- is source, and none of it reaches the screen
+# until the compositor is rebuilt. `clean` first because a rebuild here is
+# always answering a change the Makefile can't see all of: config.mk and
+# config.h are dependencies of dwl.o, but a patch that touches util.c or the
+# protocol XML is not, and a stale object is a compositor that doesn't match
+# the tree it was built from.
+#
+# `make clean && make` as the user, `make install` under sudo, rather than one
+# `sudo make clean install`: install is the only step that writes outside
+# $HOME (/usr/local/bin, the man page, the wayland-sessions entry), and
+# building as root would leave root-owned dwl and *.o in ~/projects/dwl -- so
+# the next by-hand `make` in there fails on files it can't overwrite. Same
+# result, no debris. This prompts for the sudo password like the apt and scrcpy
+# steps do.
+#
+# Installing replaces the running compositor's binary but not the running
+# compositor: dwl keeps executing the image it started with, so a rebuild
+# mid-session changes nothing until the next login. That's also why this is
+# safe to run from inside a dwl session.
+set +x # the compiler is noisy enough on its own
+if [ -z "$dwl_ready" ]; then
+	echo "  dwl source isn't in a known-good state; not building"
+	echo "  (fix the above, then: cd $dwl_src && make && sudo make install)"
+elif ! (cd "$dwl_src" && make clean && make); then
+	echo "  dwl build FAILED; the installed compositor is untouched"
+	echo "  (build deps come from the apt block above; see $dwl_src)"
+elif ! (cd "$dwl_src" && sudo make install); then
+	echo "  dwl install FAILED; the installed compositor is untouched"
+else
+	echo "  installed: $(dwl -v 2>&1 | head -1)"
+	echo "  -> log out and back in for the new compositor to take effect"
 fi
 set -x
 
