@@ -41,16 +41,6 @@ echo "===== Replicating Folder Structure ====="
 # to track everything in them nor maintain a .gitignore
 (cd home/zaq && find . -type d -exec test ! -d ~/'{}' \; -and -exec mkdir ~/'{}' \;)
 
-test -f ~/.bashrc && \
-read -p "Existing ~/.bashrc found. Overwrite (Y/n)? " answer && \
-case ${answer:0:1} in
-    y|Y )
-	    rm ~/.bashrc
-    ;;
-    * )
-    ;;
-esac
-
 # fish writes a placeholder ~/.config/fish/config.fish the first time it runs,
 # and the symlink pass below leaves real files alone -- so ours would never
 # land on a machine where fish has already been started once.
