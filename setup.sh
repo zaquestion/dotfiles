@@ -93,7 +93,10 @@ echo "===== Installing packages ====="
 #
 # dwl's own build deps come next. It links wlroots 0.18 specifically -- see
 # PKGS in its Makefile -- so the 0.19 packages, when Debian has them, are the
-# wrong ones. Not listed: gcc/git/pkg-config, already below for scrcpy.
+# wrong ones -- and why the checkout further down pins dwl to the 0.7 tag.
+# Not listed here: gcc/git/pkg-config, already below for scrcpy. git matters
+# beyond that one build -- it is what checks out dwl, scrcpy and voxtype -- and
+# this block running first is what puts it there in time.
 #
 # Fonts: waybar's config.jsonc draws its icons from Font Awesome and Weather
 # Icons (plus the Nerd Font below), and Roboto is the text face its stylesheet
@@ -442,6 +445,44 @@ else
 	else
 		echo "  voxtype build failed; see $voxtype_src"
 	fi
+fi
+set -x
+
+echo "===== Checking out dwl ====="
+# The compositor's source, which the two sections below write into: config.h is
+# rendered there and the patch stack is applied there. Pinned to v0.7 rather
+# than tracking the branch, because dwl links a specific wlroots -- 0.7 is the
+# release built against wlroots 0.18, which is what trixie packages
+# (libwlroots-0.18-dev, up in the apt block). Newer dwl wants 0.19 and won't
+# build here.
+#
+# This runs *before* the config.h render below, which is the whole reason a
+# plain clone works: the folder replication near the top of this script has
+# already created ~/projects/dwl (it mirrors every directory under home/zaq, and
+# config.h.in lives in one), but nothing has written into it -- config.h.in is a
+# template, excluded from the symlink pass -- and clone is happy with an
+# existing empty directory. Render first and it wouldn't be: clone refuses a
+# non-empty target. If this ever grows a step that drops a file in there
+# earlier, this becomes an init/fetch/checkout in place.
+#
+# Shallow, and detached at the tag: this is a build tree, not somewhere to do
+# dwl development. The patch stack applies to the worktree and doesn't need
+# history. Idempotent -- an existing checkout is left alone, including one
+# already patched, since re-cloning would throw the patches away.
+set +x
+dwl_src=~/projects/dwl
+dwl_url=https://codeberg.org/dwl/dwl.git
+dwl_ver=v0.7
+if [ -d "$dwl_src/.git" ]; then
+	echo "  $dwl_src is already a checkout; leaving it alone"
+elif git clone -q --depth 1 --branch "$dwl_ver" "$dwl_url" "$dwl_src"; then
+	echo "  checked out dwl $dwl_ver in $dwl_src"
+else
+	# The likely second failure is a leftover directory from the first: the
+	# render below puts config.h in there whether or not this worked, and clone
+	# won't touch a non-empty target. Hence the rm in the recovery line.
+	echo "  couldn't check out dwl $dwl_ver; fix the network and rerun, or:"
+	echo "    rm -rf $dwl_src && git clone --depth 1 --branch $dwl_ver $dwl_url $dwl_src"
 fi
 set -x
 

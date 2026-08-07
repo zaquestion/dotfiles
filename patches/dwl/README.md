@@ -163,13 +163,19 @@ re-added on its own:
     git apply --reverse ~/projects/dotfiles/patches/dwl/0004-mark-floating-client-in-layout-symbol.patch
     git apply ~/projects/dotfiles/patches/dwl/0004-mark-floating-client-in-layout-symbol.patch
 
-## Fresh-machine ordering
+## The checkout
 
-`setup.sh` creates `~/projects/dwl/` and renders `config.h` into it, so a later
-`git clone` into that path fails on the non-empty directory. Clone dwl first, or
-populate the directory in place:
+`setup.sh` makes it — the same one-liner as below — just *before* it renders
+`config.h` and applies the stack. That order is load-bearing: setup's folder
+replication has already created `~/projects/dwl`, and `git clone` is happy with
+an existing empty directory but refuses one that has `config.h` in it.
 
-    git -C ~/projects/dwl init
-    git -C ~/projects/dwl remote add origin https://codeberg.org/dwl/dwl.git
-    git -C ~/projects/dwl fetch --depth 1 origin v0.7
-    git -C ~/projects/dwl checkout FETCH_HEAD
+`v0.7` and not the branch: dwl links one wlroots version, and 0.7 is the release
+built against wlroots 0.18 — which is what trixie packages, and what setup's apt
+block installs as `libwlroots-0.18-dev`. A newer dwl wants 0.19 and won't build
+against it.
+
+An existing checkout is left alone, patched or not, so re-running setup never
+resets the tree. By hand:
+
+    git clone --depth 1 --branch v0.7 https://codeberg.org/dwl/dwl.git ~/projects/dwl

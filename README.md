@@ -19,7 +19,7 @@ what the bar shows — is a tracked file in here.
 
 | | | |
 |---|---|---|
-| compositor | dwl 0.7 | built from `~/projects/dwl`, patched from `patches/dwl`, configured by the tracked `config.h` |
+| compositor | dwl 0.7 | checked out and patched into `~/projects/dwl` by setup, configured by the tracked `config.h`, built by hand — 0.7 because it links wlroots 0.18, the version trixie packages |
 | bar | waybar | `~/.config/waybar`, started by `~/scripts/dwlstart` |
 | locker | swaylock | `~/.config/swaylock/config`, on mod-shift-l |
 | terminal | foot | `~/.config/foot/foot.ini`, opened in the focused window's cwd by `~/scripts/footcwd` |
@@ -83,12 +83,6 @@ toolchains. Two prerequisites it deliberately leaves alone:
   provisioning is `command -v mise`-guarded, so without it setup completes
   looking clean and installs almost none of the toolchain.
 
-Then clone dwl **before** running setup, because setup creates
-`~/projects/dwl/` for the `config.h` symlink and `git clone` refuses a
-non-empty directory:
-
-    git clone --branch v0.7 https://codeberg.org/dwl/dwl.git ~/projects/dwl
-
 Run setup from the repo root — the symlink pass is `pwd`-relative:
 
     ./setup.sh
@@ -117,8 +111,9 @@ icons live in a private-use range no Debian package covers); installs keychain 3
 from its GitHub release, checksum-verified, tracking latest rather than a pin;
 configures the default audio sink (see below); makes fish the login shell; runs
 `mise install` and adds the tooling that lives outside it (rust-analyzer, yapf,
-pynvim, codelldb); builds scrcpy and voxtype from source; renders `config.h`;
-and applies the dwl patch stack to a clean checkout.
+pynvim, codelldb); builds scrcpy and voxtype from source; checks out dwl v0.7
+into `~/projects/dwl`; renders `config.h`; and applies the dwl patch stack to a
+clean checkout.
 
 All of it is idempotent and re-running costs nothing — but the guard file means
 a second run needs `rm ~/.dotfiles_initialized` first.
