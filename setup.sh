@@ -123,6 +123,7 @@ if command -v apt >/dev/null; then
 		pipewire \
 		pipewire-bin \
 		pipewire-pulse \
+                pipewire-alsa \
 		wireplumber \
 		xdg-user-dirs \
 		make \
