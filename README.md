@@ -19,7 +19,7 @@ what the bar shows — is a tracked file in here.
 
 | | | |
 |---|---|---|
-| compositor | dwl 0.7 | checked out and patched into `~/projects/dwl` by setup, configured by the tracked `config.h`, built by hand — 0.7 because it links wlroots 0.18, the version trixie packages |
+| compositor | dwl 0.7 | checked out, patched, built and installed from `~/projects/dwl` by setup, configured by the tracked `config.h` — 0.7 because it links wlroots 0.18, the version trixie packages |
 | bar | waybar | `~/.config/waybar`, started by `~/scripts/dwlstart` |
 | locker | swaylock | `~/.config/swaylock/config`, on mod-shift-l |
 | terminal | foot | `~/.config/foot/foot.ini`, opened in the focused window's cwd by `~/scripts/footcwd` |
@@ -88,11 +88,8 @@ Run setup from the repo root — the symlink pass is `pwd`-relative:
     ./setup.sh
 
 It is not an unattended install: `chsh` wants the account password, overwriting
-an existing `~/.bashrc` or `config.fish` asks first, and both the apt block and
-scrcpy's install step go through `sudo`. Then build the compositor, which setup
-never does:
-
-    cd ~/projects/dwl && make && sudo make install
+an existing `~/.bashrc` or `config.fish` asks first, and the apt block, scrcpy's
+install step and dwl's `make install` all go through `sudo`.
 
 Log out and pick the `dwl` session. Dictation needs its model fetched once
 more, ~700MB — setup prints the command with the right model name filled in,
@@ -112,8 +109,8 @@ from its GitHub release, checksum-verified, tracking latest rather than a pin;
 configures the default audio sink (see below); makes fish the login shell; runs
 `mise install` and adds the tooling that lives outside it (rust-analyzer, yapf,
 pynvim, codelldb); builds scrcpy and voxtype from source; checks out dwl v0.7
-into `~/projects/dwl`; renders `config.h`; and applies the dwl patch stack to a
-clean checkout.
+into `~/projects/dwl`, renders `config.h`, applies the patch stack to a clean
+checkout and builds and installs the compositor.
 
 All of it is idempotent and re-running costs nothing — but the guard file means
 a second run needs `rm ~/.dotfiles_initialized` first.

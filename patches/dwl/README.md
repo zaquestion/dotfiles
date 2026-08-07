@@ -134,11 +134,16 @@ added to `config.def.h` by this patch, but the build uses the tracked
 
 `setup.sh` does this automatically: on a **clean** dwl checkout it applies the
 stack in order, and on a dirty one it assumes the patches are already there and
-leaves the tree alone. Either way it never builds -- that stays manual:
+leaves the tree alone. It then builds and installs the result -- `make clean &&
+make` as you, `sudo make install` for the parts outside `$HOME` -- so a patch
+edit reaches the screen with nothing more than a rerun and a fresh login. A
+half-applied stack is not built.
+
+After editing a patch by hand, the same two steps:
 
     cd ~/projects/dwl
     make && sudo make install
-    # restart the dwl session for the new binary to take effect
+    # log out and back in for the new binary to take effect
 
 By hand, from a clean checkout at `0.7` -- note the `sed`, which is what stamps
 0006's `@HOME@` and is a no-op for the other six:
