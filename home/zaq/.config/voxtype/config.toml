@@ -62,51 +62,111 @@ sample_rate = 16000
 max_duration_secs = 120
 
 [parakeet]
-# The "unified" build, not the plain tdt-0.6b-v3 one, because only this ships
-# the `tokenizer.model` that parakeet-rs's cache-aware streaming pipeline
-# requires at load time. voxtype flags the other as streaming_compatible=false
-# and it fails outright at load rather than quietly falling back.
+# The "unified" build, and it is not a free choice -- it is bound to
+# `streaming` below, in both directions. Get the pair wrong and dictation breaks
+# silently, which is exactly what happened here for the life of this file.
 #
-# The cost of that is language coverage: this one is English-only, where
-# tdt-0.6b-v3 does 25. That model is still on disk under
-# ~/.local/share/voxtype/models, and now that streaming is off below there is
-# nothing holding this here -- switching back is just this one line.
+#   streaming = true   -> MUST be parakeet-unified-en-0.6b
+#       Only this one ships the `tokenizer.model` that parakeet-rs's cache-aware
+#       pipeline wants at load time. voxtype flags tdt-0.6b-v3 as
+#       streaming_compatible=false and refuses it outright -- a loud failure.
+#
+#   streaming = false  -> MUST be parakeet-tdt-0.6b-v3
+#       The quiet one, and the bug this file shipped with. Down the ordinary
+#       path voxtype cannot identify the unified model:
+#
+#         WARN Could not auto-detect model type from ".../parakeet-unified-en-0.6b",
+#              defaulting to TDT
+#
+#       That default is wrong for this model and costs nothing visible: the load
+#       succeeds, inference runs, and every decode comes out empty. Recording
+#       worked, the bar turned red, and nothing was ever typed. Measured on one
+#       identical 9s wav, changing only this line:
+#
+#         parakeet-unified-en-0.6b  ->  ""
+#         parakeet-tdt-0.6b-v3      ->  "The quick brown fox jumps over the lazy
+#                                        dog. Testing voice dictation, 12345."
+#
+# Note that streaming mode logs `Loading Parakeet streaming (ParakeetUnified)` --
+# it identifies this model correctly there. Only the non-streaming loader is
+# blind to it, which is why the broken combination gave no error to go on.
+#
+# So: never change this line alone. It moves with `streaming` in the same edit.
+# The cost of being on this side of the pair is language coverage -- this build
+# is English-only where tdt-0.6b-v3 does 25.
 model = "parakeet-unified-en-0.6b"
 
-# Off, which costs the live typing -- text now lands all at once on stop --
-# and buys spoken punctuation, which is the better half of that trade.
+# On: words appear as you talk. The price is visible self-correction mid
+# sentence when the model revises an earlier word (a Replace event, which
+# backspaces and retypes), and everything under [text] going inert -- see below.
 #
-# The two are mutually exclusive in voxtype, and silently so. Everything under
-# [text] (spoken_punctuation, replacements, filler-word filtering) and all of
-# [output.post_process] runs in exactly one place: handle_transcription_result
-# in src/daemon.rs, the *non-streaming* completion path. The streaming event
-# pump a couple of thousand lines further down types Partial/Final/Replace text
-# straight through to the output chain and never touches the text processor.
-# src/output/streaming.rs says so outright for post_process -- "intentionally
-# bypassed during streaming", because processing each chunk independently would
-# produce inconsistent output -- and spoken punctuation is bypassed for the same
-# structural reason, just without the comment. So with streaming on, saying
-# "period" types the word period; the [text] block below is dead config.
+# Read the `model` note above before touching this. The two are one setting
+# wearing two names, and setting this to false without also changing the model
+# back to tdt-0.6b-v3 produces empty transcriptions with no error.
 #
-# What streaming was buying was watching words appear as you talk, at the price
-# of visible self-correction mid-sentence when the model revised an earlier word
-# (a Replace event, which backspaces and retypes). Punctuation you don't have to
-# reach for the keyboard to add is worth more than that.
-streaming = false
+# What being on costs is the text-processing chain, and voxtype drops it
+# silently. Everything under [text] (spoken_punctuation, replacements,
+# filler-word filtering) and all of [output.post_process] runs in exactly one
+# place: handle_transcription_result in src/daemon.rs, the *non-streaming*
+# completion path. The streaming event pump a couple of thousand lines further
+# down types Partial/Final/Replace text straight through to the output chain and
+# never touches the text processor. src/output/streaming.rs says so outright for
+# post_process -- "intentionally bypassed during streaming", because processing
+# each chunk independently would produce inconsistent output -- and spoken
+# punctuation is bypassed for the same structural reason, just without the
+# comment. So saying "period" types the word period.
+#
+# That is narrower than it sounds, and the distinction is worth keeping straight:
+# what is lost is *spoken* punctuation, not punctuation. The model does its own
+# capitalisation and punctuation inside the decode, which is upstream of any of
+# this, so it survives. Measured, streaming, on the same wav:
+#
+#   "The quick brown fox jumps over the lazy dog. Testing voice dictation, 12345"
+#
+# Full stops and commas intact. What you give up is reaching for punctuation you
+# have to *say*, plus [text.replacements] and filler filtering.
+streaming = true
 
-# Everything from here to on_demand_loading is inert while streaming is off,
-# kept for if it goes back on. Note the numbers and the prose disagree: the
-# values are 1.5/1.0/0.50 where the arithmetic below describes 2.0/1.6/0.48.
-# Recheck them against the divisibility rule before trusting either.
+# These are live now that streaming is on, and they were previously wrong. The
+# file carried 1.5/1.0/0.50 against prose describing 2.0/1.6/0.48, with a note to
+# recheck before trusting either. The prose was right: all three of the old
+# values fail the divisibility rule below (150/100/50 mel frames), so turning
+# streaming on with them does not degrade, it refuses to start --
 #
-# 2s chunks rather than the 0.5s default. This is the whole cost/benefit knob:
-# the encoder runs once per chunk for as long as you're talking, so 0.5s means
-# four times the inference of 2s for four times finer-grained feedback. This
-# machine has no usable GPU for ONNX -- the EPs upstream ships are CUDA,
+#   Error: Invalid Parakeet streaming config: left_context_secs must map to a
+#   mel-frame count divisible by 8.
+#
+# They were corrected to the documented 2.0/1.6/0.48, and then tuned down from
+# there for latency -- see the measurements below.
+#
+# Chunk is the feedback interval: text appears chunk + right after you say it, so
+# these three set how far behind your voice the typing runs. 2.0/1.6/0.48 meant
+# 2.48s, which is a long time to watch nothing happen. 0.8/1.28/0.24 is 1.04s.
+#
+# The old comment here reasoned that a smaller chunk might not keep up on CPU
+# (this machine has no usable GPU for ONNX -- the EPs upstream ships are CUDA,
 # TensorRT, MIGraphX and CoreML, none of which apply to an Apple GPU under
-# Linux -- so every one of those passes is on the CPU, and 2s leaves real
-# headroom where 0.5s might not keep up.
-streaming_chunk_secs = 1.5
+# Linux). That was worth checking rather than assuming, and it is not close.
+# Measured on one 8.96s wav, whole-file streaming transcription, identical text
+# out of every row:
+#
+#   chunk/left/right   latency   needs    inference
+#   2.0/1.6/0.48        2.48s    2.04x      3.00s
+#   1.28/1.6/0.32       1.60s    2.50x      2.92s
+#   0.96/1.28/0.32      1.28s    2.66x      2.85s
+#   0.8/1.28/0.24       1.04s    2.90x      2.85s   <- chosen
+#   0.64/0.96/0.24      0.88s    2.87x      2.84s
+#
+# "needs" is the realtime factor the encoder must sustain, (left+chunk+right)/
+# chunk. Actual encoder throughput works out at 7-9x realtime across all of them,
+# so 0.8 keeps about 3x headroom -- and inference barely moves, because the total
+# audio pushed through the encoder is roughly conserved: smaller chunks mean more
+# passes over more overlap, each one cheaper.
+#
+# 0.64 was left on the table deliberately. It buys 0.16s and costs a third of the
+# left context, and this was measured offline where nothing competes for CPU. If
+# dictation ever stutters under load, walk this back up rather than down.
+streaming_chunk_secs = 0.8
 
 # These three cannot be set freely: parakeet-rs converts each to mel frames as
 # secs * 16000 / 160, i.e. secs * 100, and rejects the config unless every one
@@ -116,22 +176,23 @@ streaming_chunk_secs = 1.5
 # not fall back.
 #
 # voxtype's own defaults (1.5 and 0.5) are NOT valid here: they come to 150 and
-# 50 frames. So these are not tuning preferences, they are corrections --
-#   left  1.6s  -> 160 frames (/8 = 20), nearest valid to the intended 1.5
-#   chunk 2.0s  -> 200 frames (/8 = 25), valid as chosen
-#   right 0.48s -> 48 frames  (/8 = 6),  nearest valid *under* the intended 0.5
+# 50 frames. Check any new value the same way -- multiply by 100, divide by 8:
+#   left  1.28s -> 128 frames (/8 = 16)
+#   chunk 0.8s  ->  80 frames (/8 = 10)
+#   right 0.24s ->  24 frames (/8 =  3)
 #
 # Right context is lookahead -- the pipeline waits for that much audio past a
-# chunk before emitting it -- so it adds to the delay on top of the chunk, which
-# is why this rounds down rather than up to 0.56.
+# chunk before emitting it -- so it adds to the delay on top of the chunk. It is
+# the cheapest latency to give back, which is why it went 0.48 -> 0.24 first.
 #
-# Left context is the amortisation knob. The encoder processes
-# left + chunk + right = 4.08s of audio for every 2.0s chunk, so it has to run
-# better than ~2x realtime to keep up. A smaller chunk would make that ratio
-# much worse: parakeet-rs's own defaults (5.6/0.56/0.56) encode 6.72s per 0.56s
-# chunk, needing 12x realtime.
-streaming_left_context_secs = 1.0
-streaming_right_context_secs = 0.50
+# Left context is the amortisation knob, and the one to leave alone. It is what
+# the encoder carries forward for continuity across chunk boundaries, so cutting
+# it is the change most likely to cost accuracy rather than just time. 1.28s
+# holds it near the original 1.6s while the chunk does the shrinking. For scale,
+# parakeet-rs's own defaults (5.6/0.56/0.56) encode 6.72s per 0.56s chunk, which
+# would need 12x realtime -- well past what this CPU sustains.
+streaming_left_context_secs = 1.28
+streaming_right_context_secs = 0.24
 
 # Keep the model resident -- it is ~2.6GB against 30GB of RAM, and on-demand
 # loading would put a cold load of that in front of every utterance.
@@ -141,17 +202,21 @@ on_demand_loading = false
 # wtype types at the cursor via the virtual-keyboard protocol, which dwl
 # supports natively -- no uinput, no root, unlike ydotool.
 mode = "type"
-# If a client mishandles the injected keymap the text lands on the clipboard
-# rather than vanishing.
+# Off, and off *because* streaming is on -- this is the third setting tied to
+# that switch, after `model` and the chunk values.
 #
-# This used to be a bad bet, and only because of streaming. Typing applied each
-# chunk as an incremental delta at the cursor so the text accumulated, but the
-# clipboard has no equivalent and every chunk simply *overwrote* the last:
-# measured directly, a 14s clip that typed fine came out of the clipboard path
-# as only its final 25-character fragment -- and a fragment that looks like a
-# whole sentence is worse than an error. With streaming off there is one
-# utterance and one clipboard write, so the fallback is a plain fallback again.
-fallback_to_clipboard = true
+# The idea is that if a client mishandles the injected keymap the text lands on
+# the clipboard rather than vanishing. That is a good fallback for one utterance
+# and one write. Under streaming it is not: typing applies each chunk as an
+# incremental delta at the cursor so the text accumulates, but the clipboard has
+# no equivalent and every chunk simply *overwrites* the last. Measured directly,
+# a 14s clip that typed fine came out of the clipboard path as only its final
+# 25-character fragment -- and a fragment that looks like a whole sentence is
+# worse than an error, because nothing about it says it is partial.
+#
+# Losing the text outright is the better failure here: it is obvious, and you
+# just say it again. So this goes back to true if streaming ever goes back off.
+fallback_to_clipboard = false
 type_delay_ms = 0
 
 [output.notification]
@@ -193,9 +258,9 @@ icon_theme = "nerd-font"
 # 4, and it is the universal record dot -- which is the right symbol anyway,
 # since "streaming" and "recording" are the same thing to the person talking.
 #
-# That override is inert now that streaming is off -- the state reported is
-# "recording", which the theme already draws as U+F111 -- but it costs nothing
-# and would be needed again the moment streaming came back.
+# That override is live: with streaming on, the state the daemon reports while
+# the mic is open is "streaming", not "recording", so this is the glyph the bar
+# actually draws. (It was inert while streaming was off, and would be again.)
 #
 # transcribing (spinner, U+F110) and stopped (mic-slash, U+F131) are left to
 # the theme; both are FontAwesome 4 codepoints and both render.
@@ -203,8 +268,11 @@ idle = ""
 streaming = ""
 
 [text]
-# "period" -> "." and friends. The whole point is not reaching for the keyboard
-# mid-sentence. Depends on streaming being off up in [parakeet] -- see there.
+# "period" -> "." and friends. INERT AS CONFIGURED: this whole block only runs on
+# the non-streaming completion path, and streaming is on up in [parakeet] -- see
+# there. Saying "period" currently types the word. Left set to true so that
+# turning streaming off restores it in the same edit rather than needing a second
+# one; the model's own inferred punctuation is unaffected either way.
 #
 # The vocabulary is a fixed table in src/text/mod.rs, not configurable, longest
 # phrase first: question mark, exclamation mark/point, open|close paren(thesis)

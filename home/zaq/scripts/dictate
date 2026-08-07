@@ -15,7 +15,12 @@ set -euo pipefail
 voxtype=~/.local/bin/voxtype
 runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
 state="$runtime/state"      # written by the daemon: idle|recording|transcribing
-pidfile="$runtime/pid"      # written by the daemon at startup, removed on exit
+# voxtype.lock and not the `pid` file next to it, even though both normally hold
+# the same number. `pid` is written by a starting daemon *before* it tries for
+# the lock, so a second daemon that starts and is refused overwrites `pid` with
+# its own, and then exits -- leaving `pid` naming a dead process while the real
+# daemon runs on. The lock is only ever held by the instance that won it.
+pidfile="$runtime/voxtype.lock"
 watchpid="$runtime/watchdog.pid"
 config=~/.config/voxtype/config.toml
 
@@ -26,9 +31,25 @@ mic=effect_output.j316-mic
 
 # Silence is "quieter than this, for this long".
 #
-# Measured on an idle machine in a quiet room, the built-in mic floors at about
-# -45dBFS mean, peaking to roughly -23dBFS on transients. -35 sits ten-odd dB
-# above that floor and comfortably under speech, and it demonstrably trips.
+# KNOWN BROKEN AT -35: this gate never fires, so the auto-stop below is dead and
+# the only way to end a recording is a second mod-slash. Left at -35 rather than
+# guessed upward, because the two failure modes are not symmetric (see below) and
+# the value that replaces it needs a speech-level measurement to sit against.
+#
+# Measured directly, 20s of an ordinary quiet room on this mic:
+#   RMS floor   -43.0 dBFS
+#   PEAK floor  -28.9 dBFS   <- this is the number that matters
+#
+# silencedetect compares the instantaneous level, not the mean, so the gate has
+# to clear the *peak* floor to ever see continuous quiet. -35 is 6dB underneath
+# it, so the timer resets on ordinary room transients and never reaches d=10.
+# Confirmed: 25s of silence, zero detections. Sweeping the same capture, -30 and
+# below never trip and -28 is the first that does.
+#
+# The prose this replaces claimed a -45 mean "peaking to roughly -23dBFS" and
+# then set the gate to -35, which cannot both be true -- a gate below the peaks
+# is exactly the case that never fires. The mean was about right; the conclusion
+# drawn from it was not.
 #
 # Do not raise this toward -20 on the basis of a busy machine. An earlier pass
 # measured the floor at -33dBFS and concluded nothing below -20 would ever fire
@@ -43,22 +64,42 @@ mic=effect_output.j316-mic
 # So err low. If it cuts you off, go *more* negative; if it never stops, go
 # less negative.
 #
-# To re-measure in your own conditions -- room as usual, say nothing:
-#   ffmpeg -f pulse -i effect_output.j316-mic -af volumedetect -f null -
-# then confirm the gate still trips, with a short d so you aren't waiting:
-#   ffmpeg -f pulse -i effect_output.j316-mic \
-#       -af silencedetect=noise=-35dB:d=2 -f null - 2>&1 | grep silence_start
+# To re-measure in your own conditions. Capture the room saying nothing, and
+# read the PEAK, not the RMS:
+#   ffmpeg -f pulse -i effect_output.j316-mic -t 20 quiet.wav
+#   ffmpeg -i quiet.wav -af astats=metadata=1 -f null - 2>&1 | grep 'Peak level'
+# Then sweep offline against that one capture rather than re-recording per guess:
+#   for th in 30 28 26 24 22; do printf "%s " $th; ffmpeg -i quiet.wav \
+#       -af "silencedetect=noise=-${th}dB:d=10" -f null - 2>&1 \
+#       | grep -c silence_start; done
+# Pick a few dB above the highest that never trips, then say a sentence at normal
+# dictation volume and confirm its quietest passages stay above the value chosen.
 # (A highpass to shave off fan rumble was tried and bought ~2dB -- the noise is
 # broadband, so it isn't worth the extra filter.)
 silence_dbfs=-35
 silence_secs=10
+
+# Both of the pidfiles under $runtime outlive the process they name, and by more
+# than a moment: a daemon orphaned by a session that ended leaves voxtype.lock
+# behind, and a `voxtype daemon` that starts and then loses the lock writes pid
+# before it fails, so that one names a process that was never alive for long.
+# Killing what they say without checking is a live hazard once the kernel
+# recycles the number onto something unrelated -- so every kill here goes
+# through this. $2 is /proc/<pid>/comm, which for the daemon is "voxtype" and
+# for the watchdog "ffmpeg".
+kill_if() {
+	local pid=$1 comm=$2
+	[[ -n $pid ]] || return 1
+	[[ $(cat "/proc/$pid/comm" 2>/dev/null) == "$comm" ]] || return 1
+	kill "$pid" 2>/dev/null || true
+}
 
 # Kill a watchdog from a previous recording. The pidfile holds ffmpeg's own pid
 # (see below), so killing it closes the pipe feeding the reader loop, which
 # ends that too -- one signal tears down the pair.
 stop_watchdog() {
 	[[ -f $watchpid ]] || return 0
-	kill "$(<"$watchpid")" 2>/dev/null || true
+	kill_if "$(<"$watchpid")" ffmpeg || true
 	rm -f "$watchpid"
 }
 
@@ -107,12 +148,16 @@ reload_stale_daemon() {
 	local pid uptime edited
 	[[ -f $pidfile && -f $config ]] || return 0
 	pid=$(<"$pidfile")
+	# Not just "a process with this pid exists" -- see kill_if above. A lock
+	# file left behind by a crashed daemon names a pid the kernel is free to
+	# hand to anything, and the kill below would take it out.
+	[[ $(cat "/proc/$pid/comm" 2>/dev/null) == voxtype ]] || return 0
 	uptime=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ') || true
-	[[ -n $uptime ]] || return 0    # pidfile left behind by a crashed daemon
+	[[ -n $uptime ]] || return 0    # exited between the check and here
 	edited=$(( $(date +%s) - $(stat -Lc %Y "$config") ))
 	(( uptime > edited )) || return 0
 
-	kill "$pid" 2>/dev/null || true
+	kill_if "$pid" voxtype || return 0
 	# Wait for it to actually be gone before respawning. The single-instance
 	# guard is a pidfile, not an flock, so an overlapping start is refused
 	# outright -- and while it does clean up a lock left by a dead process, that

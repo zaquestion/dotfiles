@@ -20,7 +20,69 @@
 # nothing running, `voxtype record start` prints "not running" and the key does
 # nothing. Guarded so a machine that hasn't built voxtype yet still gets a
 # working session out of this script.
+#
+# reap_stale first, and it is not optional: the daemon below is backgrounded
+# from this script, so when the session ends it is *orphaned*, not killed --
+# nothing in dwl, gdm or here signals it on the way out. Log out and back in and
+# it is still there, holding the lock, and the new one loses:
+#
+#   ERROR Failed to acquire lock: another voxtype instance is already running
+#   Error: Configuration error: Another voxtype instance is already running
+#
+# which goes to the journal and nowhere the person pressing the key can see.
+# What survives is the *previous* session's daemon, and it no longer answers
+# SIGUSR1 -- the state file stays at idle, the waybar module never turns red,
+# and mod-slash does nothing at all. That is the whole failure mode: not a
+# missing daemon, an old one squatting the lock.
+#
+# So the session takes ownership rather than politely losing to whatever came
+# before. This is the only thing that starts the daemon and there is exactly one
+# session at a time, so anything already holding the lock is by definition a
+# leftover. Prefixed variable names because sh has no `local` -- these outlive
+# the function.
+reap_stale() {
+	# Every kill below checks /proc/<pid>/comm first. These files outlive
+	# the process they name -- a failed start leaves the `pid` file pointing
+	# at an already-dead process -- and once the kernel recycles that number
+	# onto something else, killing it blind takes out a bystander.
+	reap_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
+
+	# voxtype.lock and not the `pid` file beside it: the lock is what the new
+	# daemon actually collides with, and it names the live holder even when
+	# `pid` has been overwritten by a start that then failed -- which is
+	# exactly this case, since the loser writes `pid` before trying the lock.
+	if [ -f "$reap_dir/voxtype.lock" ]; then
+		reap_pid=$(cat "$reap_dir/voxtype.lock" 2>/dev/null)
+		if [ "$(cat "/proc/$reap_pid/comm" 2>/dev/null)" = voxtype ]; then
+			kill "$reap_pid" 2>/dev/null
+			# Wait for it to actually let go. The new daemon grabs
+			# the lock within milliseconds of starting, so racing it
+			# means losing in precisely the way this exists to stop.
+			reap_i=0
+			while kill -0 "$reap_pid" 2>/dev/null && [ "$reap_i" -lt 40 ]; do
+				sleep 0.25
+				reap_i=$((reap_i + 1))
+			done
+		fi
+	fi
+
+	# The silence watchdog from ~/scripts/dictate, orphaned the same way but
+	# worse: it is an ffmpeg holding a capture stream on the mic, and with its
+	# daemon gone nothing will ever stop it -- observed still running for as
+	# long as the session had been up. dictate's own stop_watchdog would clear
+	# it, but only on the next press; until then the mic is open with nothing
+	# on the bar saying so.
+	if [ -f "$reap_dir/watchdog.pid" ]; then
+		reap_pid=$(cat "$reap_dir/watchdog.pid" 2>/dev/null)
+		if [ "$(cat "/proc/$reap_pid/comm" 2>/dev/null)" = ffmpeg ]; then
+			kill "$reap_pid" 2>/dev/null
+		fi
+		rm -f "$reap_dir/watchdog.pid"
+	fi
+}
+
 if [ -x "$HOME/.local/bin/voxtype" ]; then
+	reap_stale
 	"$HOME/.local/bin/voxtype" -q daemon &
 fi
 
