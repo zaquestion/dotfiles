@@ -31,6 +31,7 @@
         "keyboard-state",
         "battery",
         "battery#bat2",
+        "clock#utc",
         "clock",
         "tray",
         "custom/power"
@@ -93,10 +94,34 @@
         //   "TelegramDesktop": "$HOME/.local/share/icons/hicolor/16x16/apps/telegram.png"
         // }
     },
+    // The date is in "format" now rather than only behind format-alt, so the
+    // bar always answers "what day is it" without a click -- weekday and
+    // day-of-month, since the month and year are the parts you already know.
+    // That leaves format-alt free to be the more-detail view instead of the
+    // only way to see the date at all: the full ISO date and seconds, which is
+    // what you actually want on the occasions you go looking.
     "clock": {
         // "timezone": "America/New_York",
+        "format": "{:%a %d %H:%M}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "{:%Y-%m-%d}"
+        "format-alt": "{:%a %Y-%m-%d %H:%M:%S}"
+    },
+    // Same instant in UTC, sitting immediately left of the local clock. The
+    // trailing "UTC" is the only thing distinguishing the two at a glance --
+    // two bare timestamps side by side invite reading the wrong one -- and
+    // style.css leaves this one as a plain chip so the local clock keeps being
+    // the single filled anchor.
+    //
+    // No weekday here: it's the same weekday as the local clock all but a few
+    // hours a day, and where it does differ the day-of-month already says so.
+    //
+    // No calendar tooltip here either: it would be the same month grid the
+    // local clock already shows, so the tooltip states the offset instead,
+    // which is the thing that isn't already on the bar.
+    "clock#utc": {
+        "timezone": "UTC",
+        "format": "{:%d %H:%M} UTC",
+        "tooltip-format": "{:%A %d %B %Y, %H:%M:%S %Z (%z)}"
     },
     "cpu": {
         "format": "{usage}% ",

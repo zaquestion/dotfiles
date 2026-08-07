@@ -177,6 +177,16 @@ window#waybar {
     font-weight: bold;
 }
 
+/* clock#utc gets the id "clock" too, so the fill above lands on it as well
+ * unless it's taken back off -- two filled pink chips would leave the bar with
+ * no anchor. It keeps the pink as text on the ordinary chip: related to the
+ * local clock by hue, subordinate to it by weight and fill. */
+#clock.utc {
+    background-color: #241d30;
+    color: #f472b6;
+    font-weight: normal;
+}
+
 /* Deliberately dim when inactive: an idle inhibitor that is off is the normal
  * state and shouldn't draw the eye. Activated it borrows the clock's pink,
  * because "your screen will not blank" is worth noticing. */
